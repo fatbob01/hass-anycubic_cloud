@@ -310,7 +310,7 @@ class AnycubicStartPrintRequestCloud(AnycubicBaseStartPrintRequest):
         return (
             f"AnycubicStartPrintRequestCloud("
             f"filetype={self._filetype}, "
-            f"file_id={self._file_name}, "
+            f"file_id={self._file_id}, "
             f"task_settings={self.task_settings})"
         )
 
