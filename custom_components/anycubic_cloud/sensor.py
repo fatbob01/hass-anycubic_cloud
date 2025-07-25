@@ -345,7 +345,7 @@ class AnycubicSensor(AnycubicCloudEntity, SensorEntity):
 
     @property
     def native_value(self) -> Any:
-        """Return the ...."""
+        """Return the native sensor value."""
         state = printer_state_for_key(self.coordinator, self._printer_id, self.entity_description.key)
 
         if state is None:
