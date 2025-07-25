@@ -9921,22 +9921,16 @@
           .selected=${this.selectedPage}
           @iron-activate=${this.handlePageSelected}
         >
-          <paper-tab page-name="main"> ${this._tabMain} </paper-tab>
-          <paper-tab page-name="local-files">
-            ${this._tabFilesLocal}
-          </paper-tab>
-          <paper-tab page-name="udisk-files">
-            ${this._tabFilesUdisk}
-          </paper-tab>
-          <paper-tab page-name="cloud-files">
-            ${this._tabFilesCloud}
-          </paper-tab>
-          <paper-tab page-name="print-no_cloud_save">
+          <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
+          <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
+          <ha-tab page-name="udisk-files"> ${this._tabFilesUdisk} </ha-tab>
+          <ha-tab page-name="cloud-files"> ${this._tabFilesCloud} </ha-tab>
+          <ha-tab page-name="print-no_cloud_save">
             ${this._tabPrintNoSave}
-          </paper-tab>
-          <paper-tab page-name="print-save_in_cloud">
+          </ha-tab>
+          <ha-tab page-name="print-save_in_cloud">
             ${this._tabPrintSave}
-          </paper-tab>
+          </ha-tab>
           ${null}
         </ha-tabs>
       </div>
