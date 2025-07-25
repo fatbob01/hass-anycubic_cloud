@@ -5,7 +5,7 @@ import asyncio
 import time
 import traceback
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from aiohttp import CookieJar
 from homeassistant.config_entries import ConfigEntry
@@ -74,6 +74,8 @@ from .helpers import (
 if TYPE_CHECKING:
     from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
     from .entity import AnycubicCloudEntity, AnycubicCloudEntityDescription
+
+_AnycubicCloudEntityT = TypeVar("_AnycubicCloudEntityT", bound="AnycubicCloudEntity")
 
 
 class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
@@ -417,7 +419,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.async_update_listeners()
 
     @callback
-    def add_entities_for_seen_printers[_AnycubicCloudEntityT: AnycubicCloudEntity](
+    def add_entities_for_seen_printers(
         self,
         async_add_entities: AddEntitiesCallback,
         entity_constructor: type[_AnycubicCloudEntityT],

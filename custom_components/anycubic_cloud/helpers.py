@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from enum import IntEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 
@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from .coordinator import AnycubicCloudDataUpdateCoordinator
     from .entity import AnycubicCloudEntityDescription
 
+
+_T = TypeVar("_T")
 
 class AnycubicMQTTConnectMode(IntEnum):
     Printing_Only = 1
@@ -255,7 +257,7 @@ def remove_quotes_from_string(input_string: str) -> str:
     raise TypeError("Unexpected quotes in string.")
 
 
-def validate_value_is_type[_T: Any](
+def validate_value_is_type(
     value: Any,
     value_type: type[_T],
     allow_lists: bool = False,
@@ -271,7 +273,7 @@ def validate_value_is_type[_T: Any](
     return None
 
 
-def get_value_from_dict_if_type[_T: Any](
+def get_value_from_dict_if_type(
     input_dict: dict[str, Any],
     key: str,
     value_type: type[_T],
