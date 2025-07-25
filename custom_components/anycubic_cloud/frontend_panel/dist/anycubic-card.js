@@ -9591,11 +9591,9 @@
           .selected=${this.configPage}
           @iron-activate=${this._handlePageSelected}
         >
-          <paper-tab page-name="main">${this._tabMain}</paper-tab>
-          <paper-tab page-name="stats">${this._tabStats}</paper-tab>
-          ${this.hasColorbox ? K`<paper-tab page-name="colours">
-                ${this._tabColours}
-              </paper-tab>` : q}
+          <ha-tab page-name="main">${this._tabMain}</ha-tab>
+          <ha-tab page-name="stats">${this._tabStats}</ha-tab>
+          ${this.hasColorbox ? K`<ha-tab page-name="colours"> ${this._tabColours} </ha-tab>` : q}
         </ha-tabs>
       </div>
     `;

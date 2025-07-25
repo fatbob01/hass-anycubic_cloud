@@ -296,12 +296,10 @@ export class AnycubicPrintercardConfigure extends LitElement {
           .selected=${this.configPage}
           @iron-activate=${this._handlePageSelected}
         >
-          <paper-tab page-name="main">${this._tabMain}</paper-tab>
-          <paper-tab page-name="stats">${this._tabStats}</paper-tab>
+          <ha-tab page-name="main">${this._tabMain}</ha-tab>
+          <ha-tab page-name="stats">${this._tabStats}</ha-tab>
           ${this.hasColorbox
-            ? html`<paper-tab page-name="colours">
-                ${this._tabColours}
-              </paper-tab>`
+            ? html`<ha-tab page-name="colours"> ${this._tabColours} </ha-tab>`
             : nothing}
         </ha-tabs>
       </div>
