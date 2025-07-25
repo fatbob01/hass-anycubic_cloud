@@ -160,7 +160,7 @@ export class AnycubicCloudPanel extends LitElement {
           scrollable
           attr-for-selected="page-name"
           .selected=${this.selectedPage}
-          @iron-activate=${this.handlePageSelected}
+          @MDCTabBar:activated=${this.handlePageSelected}
         >
           <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
           <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
@@ -331,7 +331,12 @@ export class AnycubicCloudPanel extends LitElement {
   };
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const newPage = ev.detail.item.getAttribute("page-name") as string;
+    const index = ev.detail.index;
+    const tab = (ev.currentTarget as unknown as { tabs: Element[] }).tabs[
+      index
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const newPage = tab.getAttribute("page-name") as string;
     if (newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
       this.requestUpdate();

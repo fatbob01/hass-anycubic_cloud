@@ -9496,8 +9496,9 @@
   let so = class extends pt {
     constructor() {
       super(...arguments), this.configPage = "main", this.availableStats = {}, this.formSchemaMain = [], this.formSchemaColours = [], this.hasColorbox = !1, this.isLCD = !1, this._handlePageSelected = t => {
-        const e = t.detail.item.getAttribute("page-name");
-        e !== this.configPage && (this.configPage = e);
+        const e = t.detail.index,
+          i = t.currentTarget.tabs[e].getAttribute("page-name");
+        i !== this.configPage && (this.configPage = i);
       }, this._selectedStatsChanged = t => {
         this.cardConfig.monitoredStats = t, this._configChanged(this.cardConfig);
       }, this._formValueChanged = t => {
@@ -9589,7 +9590,7 @@
           scrollable
           attr-for-selected="page-name"
           .selected=${this.configPage}
-          @iron-activate=${this._handlePageSelected}
+          @MDCTabBar:activated=${this._handlePageSelected}
         >
           <ha-tab page-name="main">${this._tabMain}</ha-tab>
           <ha-tab page-name="stats">${this._tabStats}</ha-tab>

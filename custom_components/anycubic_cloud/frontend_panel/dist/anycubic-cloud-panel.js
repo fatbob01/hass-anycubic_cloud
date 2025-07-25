@@ -9880,15 +9880,16 @@
           });
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
-        const e = t.detail.item.getAttribute("page-name");
-        e !== mi(this.route) ? (((t, e, i = !1) => {
+        const e = t.detail.index,
+          i = t.currentTarget.tabs[e].getAttribute("page-name");
+        i !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
             n = gi(t.route),
             s = `${r}/${n ? `${n}/${e}` : ""}`;
           i ? history.replaceState(null, "", s) : history.pushState(null, "", s), Le(window, "location-changed", {
             replace: i
           });
-        })(this, e), this.requestUpdate()) : scrollTo(0, 0);
+        })(this, i), this.requestUpdate()) : scrollTo(0, 0);
       };
     }
     connectedCallback() {
@@ -9919,7 +9920,7 @@
           scrollable
           attr-for-selected="page-name"
           .selected=${this.selectedPage}
-          @iron-activate=${this.handlePageSelected}
+          @MDCTabBar:activated=${this.handlePageSelected}
         >
           <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
           <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
