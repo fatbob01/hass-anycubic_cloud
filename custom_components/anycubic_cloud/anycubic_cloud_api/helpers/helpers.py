@@ -225,16 +225,16 @@ def get_ssl_cert_directory() -> str:
 def get_mqtt_ssl_path_ca(
     ssl_root: str,
 ) -> str:
-    return path.join(ssl_root, 'anycubic_mqqt_tls_ca.crt')
+    return path.join(ssl_root, 'anycubic_mqtt_tls_ca.crt')
 
 
 def get_mqtt_ssl_path_cert(
     ssl_root: str,
 ) -> str:
-    return path.join(ssl_root, 'anycubic_mqqt_tls_client.crt')
+    return path.join(ssl_root, 'anycubic_mqtt_tls_client.crt')
 
 
 def get_mqtt_ssl_path_key(
     ssl_root: str,
 ) -> str:
-    return path.join(ssl_root, 'anycubic_mqqt_tls_client.key')
+    return path.join(ssl_root, 'anycubic_mqtt_tls_client.key')
