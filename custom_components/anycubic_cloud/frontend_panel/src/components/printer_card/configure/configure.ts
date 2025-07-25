@@ -294,7 +294,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
           scrollable
           attr-for-selected="page-name"
           .selected=${this.configPage}
-          @iron-activate=${this._handlePageSelected}
+          @MDCTabBar:activated=${this._handlePageSelected}
         >
           <ha-tab page-name="main">${this._tabMain}</ha-tab>
           <ha-tab page-name="stats">${this._tabStats}</ha-tab>
@@ -307,7 +307,12 @@ export class AnycubicPrintercardConfigure extends LitElement {
   }
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const newPage = ev.detail.item.getAttribute("page-name") as string;
+    const index = ev.detail.index;
+    const tab = (ev.currentTarget as unknown as { tabs: Element[] }).tabs[
+      index
+    ];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const newPage = tab.getAttribute("page-name") as string;
     if (newPage !== this.configPage) {
       this.configPage = newPage;
     }
