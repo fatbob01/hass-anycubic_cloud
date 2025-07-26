@@ -465,7 +465,3 @@ export interface EvtTargSpoolEdit extends EventTarget {
 export interface EvtTargColourPreset extends EventTarget {
   preset: string;
 }
-
-export interface HasTabs {
-  tabs: HTMLElement[];
-}
