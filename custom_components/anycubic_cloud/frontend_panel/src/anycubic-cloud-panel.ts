@@ -332,10 +332,9 @@ export class AnycubicCloudPanel extends LitElement {
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as unknown as { tabs: Element[] }).tabs[
+    const tab = (ev.currentTarget as HTMLElement).querySelectorAll("ha-tab")[
       index
     ];
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     const newPage = tab.getAttribute("page-name") as string;
     if (newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
