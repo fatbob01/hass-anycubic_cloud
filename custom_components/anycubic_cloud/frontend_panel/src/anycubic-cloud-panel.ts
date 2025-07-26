@@ -374,6 +374,8 @@ export class AnycubicCloudPanel extends LitElement {
         background-color: var(--app-header-background-color);
         color: var(--app-header-text-color, white);
         border-bottom: var(--app-header-border-bottom, none);
+        position: relative;
+        z-index: 1;
         margin-top: var(--header-height);
       }
       .toolbar {

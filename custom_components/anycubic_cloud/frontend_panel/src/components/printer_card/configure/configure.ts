@@ -499,6 +499,8 @@ export class AnycubicPrintercardConfigure extends LitElement {
 
       .header {
         color: var(--primary-text-color);
+        position: relative;
+        z-index: 1;
         margin-top: var(--header-height);
       }
 

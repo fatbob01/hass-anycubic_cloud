@@ -9880,10 +9880,7 @@
           });
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
-        const e = t.composedPath().find(t => {
-            var e, i;
-            return null !== (null === (i = (e = t).getAttribute) || void 0 === i ? void 0 : i.call(e, "page-name"));
-          }),
+        const e = t.composedPath().find(t => null !== t.getAttribute("page-name")),
           i = null == e ? void 0 : e.getAttribute("page-name");
         i && i !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
@@ -10098,6 +10095,8 @@
         background-color: var(--app-header-background-color);
         color: var(--app-header-text-color, white);
         border-bottom: var(--app-header-border-bottom, none);
+        position: relative;
+        z-index: 1;
         margin-top: var(--header-height);
       }
       .toolbar {

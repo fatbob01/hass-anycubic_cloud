@@ -9496,10 +9496,7 @@
   let so = class extends pt {
     constructor() {
       super(...arguments), this.configPage = "main", this.availableStats = {}, this.formSchemaMain = [], this.formSchemaColours = [], this.hasColorbox = !1, this.isLCD = !1, this._handlePageSelected = t => {
-        const e = t.composedPath().find(t => {
-            var e, i;
-            return null !== (null === (i = (e = t).getAttribute) || void 0 === i ? void 0 : i.call(e, "page-name"));
-          }),
+        const e = t.composedPath().find(t => null !== t.getAttribute("page-name")),
           i = null == e ? void 0 : e.getAttribute("page-name");
         i && i !== this.configPage && (this.configPage = i);
       }, this._selectedStatsChanged = t => {
@@ -9728,6 +9725,8 @@
 
       .header {
         color: var(--primary-text-color);
+        position: relative;
+        z-index: 1;
         margin-top: var(--header-height);
       }
 
