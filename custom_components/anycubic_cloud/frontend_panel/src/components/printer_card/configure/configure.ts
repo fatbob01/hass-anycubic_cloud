@@ -314,12 +314,11 @@ export class AnycubicPrintercardConfigure extends LitElement {
   }
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const tab = (ev
+    const tab = ev
       .composedPath()
-      .find(
-        (el) =>
-          (el as HTMLElement).getAttribute?.("page-name") !== null,
-      ) as HTMLElement | undefined);
+      .find((el) => (el as HTMLElement).getAttribute("page-name") !== null) as
+      | HTMLElement
+      | undefined;
     const newPage = tab?.getAttribute("page-name");
     if (newPage && newPage !== this.configPage) {
       this.configPage = newPage;
@@ -496,10 +495,17 @@ export class AnycubicPrintercardConfigure extends LitElement {
     return css`
       :host {
         display: block;
+        padding-top: var(--header-height, 64px);
       }
 
       .header {
+        background-color: var(
+          --card-background-color,
+          var(--primary-background-color, white)
+        );
         color: var(--primary-text-color);
+        border-bottom: var(--app-header-border-bottom, none);
+        margin-top: 0;
       }
 
       ha-tabs {
