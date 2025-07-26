@@ -350,12 +350,11 @@ export class AnycubicCloudPanel extends LitElement {
   };
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const tab = (ev
+    const tab = ev
       .composedPath()
-      .find(
-        (el) =>
-          (el as HTMLElement).getAttribute?.("page-name") !== null,
-      ) as HTMLElement | undefined);
+      .find((el) => (el as HTMLElement).getAttribute("page-name") !== null) as
+      | HTMLElement
+      | undefined;
     const newPage = tab?.getAttribute("page-name");
     if (newPage && newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
@@ -368,13 +367,17 @@ export class AnycubicCloudPanel extends LitElement {
   static get styles(): CSSResult {
     return css`
       :host {
-        padding: 16px;
+        padding: calc(var(--header-height, 64px) + 16px) 16px 16px;
         display: block;
       }
       .header {
-        background-color: var(--app-header-background-color);
-        color: var(--app-header-text-color, white);
+        background-color: var(
+          --card-background-color,
+          var(--primary-background-color, white)
+        );
+        color: var(--primary-text-color);
         border-bottom: var(--app-header-border-bottom, none);
+        margin-top: 0;
       }
       .toolbar {
         height: var(--header-height);
