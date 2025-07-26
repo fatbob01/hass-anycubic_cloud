@@ -22,7 +22,6 @@ import {
 import {
   DomClickEvent,
   EvtTargPrinterDevId,
-  HasTabs,
   HassDevice,
   HassDeviceList,
   HassPanel,
@@ -162,6 +161,7 @@ export class AnycubicCloudPanel extends LitElement {
           attr-for-selected="page-name"
           .selected=${this.selectedPage}
           @MDCTabBar:activated=${this.handlePageSelected}
+          @selected=${this.handlePageSelected}
         >
           <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
           <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
@@ -333,12 +333,20 @@ export class AnycubicCloudPanel extends LitElement {
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as unknown as HasTabs).tabs[index];
-    const newPage = tab.getAttribute("page-name") as string;
-    if (newPage !== getPage(this.route)) {
+    const tabId = (ev.detail as unknown as { tabId?: string }).tabId;
+    const tabsEl = ev.currentTarget as HTMLElement;
+    let tab: Element | null = null;
+    if (tabId) {
+      tab = tabsEl.querySelector(`#${tabId}`);
+    }
+    if (!tab) {
+      tab = tabsEl.children[index] as Element | null;
+    }
+    const newPage = tab?.getAttribute("page-name");
+    if (newPage && newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
       this.requestUpdate();
-    } else {
+    } else if (newPage) {
       scrollTo(0, 0);
     }
   };

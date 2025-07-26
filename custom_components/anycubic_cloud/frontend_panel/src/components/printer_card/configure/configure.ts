@@ -24,7 +24,6 @@ import {
   CalculatedTimeType,
   FormChangeDetail,
   HaFormBaseSchema,
-  HasTabs,
   HassDeviceList,
   HassEntityInfos,
   HomeAssistant,
@@ -296,6 +295,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
           attr-for-selected="page-name"
           .selected=${this.configPage}
           @MDCTabBar:activated=${this._handlePageSelected}
+          @selected=${this._handlePageSelected}
         >
           <ha-tab page-name="main">${this._tabMain}</ha-tab>
           <ha-tab page-name="stats">${this._tabStats}</ha-tab>
@@ -309,9 +309,17 @@ export class AnycubicPrintercardConfigure extends LitElement {
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as unknown as HasTabs).tabs[index];
-    const newPage = tab.getAttribute("page-name") as string;
-    if (newPage !== this.configPage) {
+    const tabId = (ev.detail as unknown as { tabId?: string }).tabId;
+    const tabsEl = ev.currentTarget as HTMLElement;
+    let tab: Element | null = null;
+    if (tabId) {
+      tab = tabsEl.querySelector(`#${tabId}`);
+    }
+    if (!tab) {
+      tab = tabsEl.children[index] as Element | null;
+    }
+    const newPage = tab?.getAttribute("page-name");
+    if (newPage && newPage !== this.configPage) {
       this.configPage = newPage;
     }
   };

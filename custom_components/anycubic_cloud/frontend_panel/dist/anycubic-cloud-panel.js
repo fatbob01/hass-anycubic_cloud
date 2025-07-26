@@ -9881,15 +9881,19 @@
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
         const e = t.detail.index,
-          i = t.currentTarget.tabs[e].getAttribute("page-name");
-        i !== mi(this.route) ? (((t, e, i = !1) => {
+          i = t.detail.tabId,
+          r = t.currentTarget;
+        let n = null;
+        i && (n = r.querySelector(`#${i}`)), n || (n = r.children[e]);
+        const s = null == n ? void 0 : n.getAttribute("page-name");
+        s && s !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
             n = gi(t.route),
             s = `${r}/${n ? `${n}/${e}` : ""}`;
           i ? history.replaceState(null, "", s) : history.pushState(null, "", s), Le(window, "location-changed", {
             replace: i
           });
-        })(this, i), this.requestUpdate()) : scrollTo(0, 0);
+        })(this, s), this.requestUpdate()) : s && scrollTo(0, 0);
       };
     }
     connectedCallback() {
@@ -9921,6 +9925,7 @@
           attr-for-selected="page-name"
           .selected=${this.selectedPage}
           @MDCTabBar:activated=${this.handlePageSelected}
+          @selected=${this.handlePageSelected}
         >
           <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
           <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
