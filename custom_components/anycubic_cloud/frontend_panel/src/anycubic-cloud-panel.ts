@@ -22,6 +22,7 @@ import {
 import {
   DomClickEvent,
   EvtTargPrinterDevId,
+  HasTabs,
   HassDevice,
   HassDeviceList,
   HassPanel,
@@ -332,9 +333,7 @@ export class AnycubicCloudPanel extends LitElement {
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as unknown as { tabs: HTMLElement[] }).tabs[
-      index
-    ];
+    const tab = (ev.currentTarget as unknown as HasTabs).tabs[index];
     const newPage = tab.getAttribute("page-name") as string;
     if (newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
