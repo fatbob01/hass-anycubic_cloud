@@ -118,6 +118,11 @@ Current features:
 If you log yourself out or your token expires you'll get a re-authentication warning in Home Assistant, just grab a new token as above.
 
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, including the preferred commit message style.
+
+
 ## Donations
 
 <a href="https://www.buymeacoffee.com/wareswichall"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=☕&slug=wareswichall&button_colour=28303f&font_colour=ffffff&font_family=Lato&outline_colour=ffffff&coffee_colour=FFDD00" /></a>
