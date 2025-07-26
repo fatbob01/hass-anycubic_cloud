@@ -370,6 +370,7 @@ export interface HassPanel {
 
 export interface PageChangeDetail {
   index: number;
+  tabId?: string;
 }
 
 export interface ModalEventBase {
