@@ -24,6 +24,7 @@ import {
   CalculatedTimeType,
   FormChangeDetail,
   HaFormBaseSchema,
+  HasTabs,
   HassDeviceList,
   HassEntityInfos,
   HomeAssistant,
@@ -308,9 +309,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as unknown as { tabs: HTMLElement[] }).tabs[
-      index
-    ];
+    const tab = (ev.currentTarget as unknown as HasTabs).tabs[index];
     const newPage = tab.getAttribute("page-name") as string;
     if (newPage !== this.configPage) {
       this.configPage = newPage;
