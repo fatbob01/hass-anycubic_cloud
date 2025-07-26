@@ -9881,7 +9881,7 @@
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
         const e = t.detail.index,
-          i = t.currentTarget.querySelectorAll("ha-tab")[e].getAttribute("page-name");
+          i = t.currentTarget.tabs[e].getAttribute("page-name");
         i !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
             n = gi(t.route),

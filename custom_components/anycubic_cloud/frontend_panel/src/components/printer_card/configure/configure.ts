@@ -308,7 +308,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
     const index = ev.detail.index;
-    const tab = (ev.currentTarget as HTMLElement).querySelectorAll("ha-tab")[
+    const tab = (ev.currentTarget as unknown as { tabs: HTMLElement[] }).tabs[
       index
     ];
     const newPage = tab.getAttribute("page-name") as string;
