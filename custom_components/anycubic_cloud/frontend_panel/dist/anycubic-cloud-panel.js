@@ -9880,20 +9880,19 @@
           });
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
-        const e = t.detail.index,
-          i = t.detail.tabId,
-          r = t.currentTarget;
-        let n = null;
-        i && (n = r.querySelector(`ha-tab#${i}`)), n || (n = r.children[e]);
-        const s = null == n ? void 0 : n.getAttribute("page-name");
-        s && s !== mi(this.route) ? (((t, e, i = !1) => {
+        const e = t.composedPath().find(t => {
+            var e, i;
+            return null !== (null === (i = (e = t).getAttribute) || void 0 === i ? void 0 : i.call(e, "page-name"));
+          }),
+          i = null == e ? void 0 : e.getAttribute("page-name");
+        i && i !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
             n = gi(t.route),
             s = `${r}/${n ? `${n}/${e}` : ""}`;
           i ? history.replaceState(null, "", s) : history.pushState(null, "", s), Le(window, "location-changed", {
             replace: i
           });
-        })(this, s), this.requestUpdate()) : s && scrollTo(0, 0);
+        })(this, i), this.requestUpdate()) : i && scrollTo(0, 0);
       };
     }
     connectedCallback() {
@@ -9927,14 +9926,28 @@
           @MDCTabBar:activated=${this.handlePageSelected}
           @selected=${this.handlePageSelected}
         >
-          <ha-tab id="panel-tab-main" page-name="main"> ${this._tabMain} </ha-tab>
-          <ha-tab id="panel-tab-local-files" page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
-          <ha-tab id="panel-tab-udisk-files" page-name="udisk-files"> ${this._tabFilesUdisk} </ha-tab>
-          <ha-tab id="panel-tab-cloud-files" page-name="cloud-files"> ${this._tabFilesCloud} </ha-tab>
-          <ha-tab id="panel-tab-print-no_cloud_save" page-name="print-no_cloud_save">
+          <ha-tab id="panel-tab-main" page-name="main">
+            ${this._tabMain}
+          </ha-tab>
+          <ha-tab id="panel-tab-local-files" page-name="local-files">
+            ${this._tabFilesLocal}
+          </ha-tab>
+          <ha-tab id="panel-tab-udisk-files" page-name="udisk-files">
+            ${this._tabFilesUdisk}
+          </ha-tab>
+          <ha-tab id="panel-tab-cloud-files" page-name="cloud-files">
+            ${this._tabFilesCloud}
+          </ha-tab>
+          <ha-tab
+            id="panel-tab-print-no_cloud_save"
+            page-name="print-no_cloud_save"
+          >
             ${this._tabPrintNoSave}
           </ha-tab>
-          <ha-tab id="panel-tab-print-save_in_cloud" page-name="print-save_in_cloud">
+          <ha-tab
+            id="panel-tab-print-save_in_cloud"
+            page-name="print-save_in_cloud"
+          >
             ${this._tabPrintSave}
           </ha-tab>
           ${null}
@@ -10085,6 +10098,7 @@
         background-color: var(--app-header-background-color);
         color: var(--app-header-text-color, white);
         border-bottom: var(--app-header-border-bottom, none);
+        margin-top: var(--header-height);
       }
       .toolbar {
         height: var(--header-height);
