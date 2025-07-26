@@ -163,18 +163,36 @@ export class AnycubicCloudPanel extends LitElement {
           @MDCTabBar:activated=${this.handlePageSelected}
           @selected=${this.handlePageSelected}
         >
-          <ha-tab page-name="main"> ${this._tabMain} </ha-tab>
-          <ha-tab page-name="local-files"> ${this._tabFilesLocal} </ha-tab>
-          <ha-tab page-name="udisk-files"> ${this._tabFilesUdisk} </ha-tab>
-          <ha-tab page-name="cloud-files"> ${this._tabFilesCloud} </ha-tab>
-          <ha-tab page-name="print-no_cloud_save">
+          <ha-tab id="panel-tab-main" page-name="main">
+            ${this._tabMain}
+          </ha-tab>
+          <ha-tab id="panel-tab-local-files" page-name="local-files">
+            ${this._tabFilesLocal}
+          </ha-tab>
+          <ha-tab id="panel-tab-udisk-files" page-name="udisk-files">
+            ${this._tabFilesUdisk}
+          </ha-tab>
+          <ha-tab id="panel-tab-cloud-files" page-name="cloud-files">
+            ${this._tabFilesCloud}
+          </ha-tab>
+          <ha-tab
+            id="panel-tab-print-no_cloud_save"
+            page-name="print-no_cloud_save"
+          >
             ${this._tabPrintNoSave}
           </ha-tab>
-          <ha-tab page-name="print-save_in_cloud">
+          <ha-tab
+            id="panel-tab-print-save_in_cloud"
+            page-name="print-save_in_cloud"
+          >
             ${this._tabPrintSave}
           </ha-tab>
           ${DEBUG // eslint-disable-line @typescript-eslint/no-unnecessary-condition
-            ? html` <ha-tab page-name="debug"> ${this._tabDebug} </ha-tab> `
+            ? html`
+                <ha-tab id="panel-tab-debug" page-name="debug">
+                  ${this._tabDebug}
+                </ha-tab>
+              `
             : null}
         </ha-tabs>
       </div>
@@ -337,7 +355,7 @@ export class AnycubicCloudPanel extends LitElement {
     const tabsEl = ev.currentTarget as HTMLElement;
     let tab: Element | null = null;
     if (tabId) {
-      tab = tabsEl.querySelector(`#${tabId}`);
+      tab = tabsEl.querySelector(`ha-tab#${tabId}`);
     }
     if (!tab) {
       tab = tabsEl.children[index] as Element | null;

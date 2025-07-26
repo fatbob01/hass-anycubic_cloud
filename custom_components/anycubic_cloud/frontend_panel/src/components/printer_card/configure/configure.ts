@@ -297,10 +297,16 @@ export class AnycubicPrintercardConfigure extends LitElement {
           @MDCTabBar:activated=${this._handlePageSelected}
           @selected=${this._handlePageSelected}
         >
-          <ha-tab page-name="main">${this._tabMain}</ha-tab>
-          <ha-tab page-name="stats">${this._tabStats}</ha-tab>
+          <ha-tab id="config-tab-main" page-name="main"
+            >${this._tabMain}</ha-tab
+          >
+          <ha-tab id="config-tab-stats" page-name="stats"
+            >${this._tabStats}</ha-tab
+          >
           ${this.hasColorbox
-            ? html`<ha-tab page-name="colours"> ${this._tabColours} </ha-tab>`
+            ? html`<ha-tab id="config-tab-colours" page-name="colours">
+                ${this._tabColours}
+              </ha-tab>`
             : nothing}
         </ha-tabs>
       </div>
@@ -313,7 +319,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
     const tabsEl = ev.currentTarget as HTMLElement;
     let tab: Element | null = null;
     if (tabId) {
-      tab = tabsEl.querySelector(`#${tabId}`);
+      tab = tabsEl.querySelector(`ha-tab#${tabId}`);
     }
     if (!tab) {
       tab = tabsEl.children[index] as Element | null;

@@ -9500,7 +9500,7 @@
           i = t.detail.tabId,
           r = t.currentTarget;
         let s = null;
-        i && (s = r.querySelector(`#${i}`)), s || (s = r.children[e]);
+        i && (s = r.querySelector(`ha-tab#${i}`)), s || (s = r.children[e]);
         const n = null == s ? void 0 : s.getAttribute("page-name");
         n && n !== this.configPage && (this.configPage = n);
       }, this._selectedStatsChanged = t => {
@@ -9597,9 +9597,9 @@
           @MDCTabBar:activated=${this._handlePageSelected}
           @selected=${this._handlePageSelected}
         >
-          <ha-tab page-name="main">${this._tabMain}</ha-tab>
-          <ha-tab page-name="stats">${this._tabStats}</ha-tab>
-          ${this.hasColorbox ? K`<ha-tab page-name="colours"> ${this._tabColours} </ha-tab>` : Z}
+          <ha-tab id="config-tab-main" page-name="main">${this._tabMain}</ha-tab>
+          <ha-tab id="config-tab-stats" page-name="stats">${this._tabStats}</ha-tab>
+          ${this.hasColorbox ? K`<ha-tab id="config-tab-colours" page-name="colours"> ${this._tabColours} </ha-tab>` : Z}
         </ha-tabs>
       </div>
     `;
