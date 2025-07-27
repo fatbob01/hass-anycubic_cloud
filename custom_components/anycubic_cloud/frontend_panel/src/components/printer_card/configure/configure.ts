@@ -500,6 +500,14 @@ export class AnycubicPrintercardConfigure extends LitElement {
         text-transform: uppercase;
       }
 
+      sl-tab::part(base) {
+        color: var(--primary-text-color);
+      }
+
+      sl-tab[active]::part(base) {
+        color: var(--primary-text-color);
+      }
+
       .ac-printer-card-configure-conf {
         margin-top: 10px;
       }

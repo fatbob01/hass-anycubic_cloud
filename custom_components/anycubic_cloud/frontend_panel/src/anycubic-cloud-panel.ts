@@ -393,6 +393,14 @@ export class AnycubicCloudPanel extends LitElement {
         text-transform: uppercase;
       }
 
+      sl-tab::part(base) {
+        color: var(--app-header-text-color, #fff);
+      }
+
+      sl-tab[active]::part(base) {
+        color: var(--app-header-text-color, #fff);
+      }
+
       .version {
         font-size: 14px;
         font-weight: 500;
