@@ -350,12 +350,18 @@ export class AnycubicCloudPanel extends LitElement {
   };
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const tab = ev
-      .composedPath()
-      .find((el) => (el as HTMLElement).getAttribute("page-name") !== null) as
-      | HTMLElement
-      | undefined;
-    const newPage = tab?.getAttribute("page-name");
+    const index = ev.detail.index;
+    let newPage: string | undefined;
+    const tabs = (ev.currentTarget as HTMLElement).querySelectorAll("ha-tab");
+    newPage = tabs[index].getAttribute("page-name") || undefined;
+    if (!newPage) {
+      const tab = ev
+        .composedPath()
+        .find(
+          (el) => (el as HTMLElement).getAttribute("page-name") !== null,
+        ) as HTMLElement | undefined;
+      newPage = tab?.getAttribute("page-name") || undefined;
+    }
     if (newPage && newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
       this.requestUpdate();
