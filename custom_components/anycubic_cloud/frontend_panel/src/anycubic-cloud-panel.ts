@@ -156,45 +156,41 @@ export class AnycubicCloudPanel extends LitElement {
     return html`
       <div class="header">
         ${this.renderToolbar()}
-        <ha-tabs
-          scrollable
-          attr-for-selected="page-name"
-          .selected=${this.selectedPage}
-          @MDCTabBar:activated=${this.handlePageSelected}
-          @selected=${this.handlePageSelected}
-        >
-          <ha-tab id="panel-tab-main" page-name="main">
+        <sl-tab-group @sl-tab-show=${this.handlePageSelected}>
+          <sl-tab slot="nav" id="panel-tab-main" panel="main">
             ${this._tabMain}
-          </ha-tab>
-          <ha-tab id="panel-tab-local-files" page-name="local-files">
+          </sl-tab>
+          <sl-tab slot="nav" id="panel-tab-local-files" panel="local-files">
             ${this._tabFilesLocal}
-          </ha-tab>
-          <ha-tab id="panel-tab-udisk-files" page-name="udisk-files">
+          </sl-tab>
+          <sl-tab slot="nav" id="panel-tab-udisk-files" panel="udisk-files">
             ${this._tabFilesUdisk}
-          </ha-tab>
-          <ha-tab id="panel-tab-cloud-files" page-name="cloud-files">
+          </sl-tab>
+          <sl-tab slot="nav" id="panel-tab-cloud-files" panel="cloud-files">
             ${this._tabFilesCloud}
-          </ha-tab>
-          <ha-tab
+          </sl-tab>
+          <sl-tab
+            slot="nav"
             id="panel-tab-print-no_cloud_save"
-            page-name="print-no_cloud_save"
+            panel="print-no_cloud_save"
           >
             ${this._tabPrintNoSave}
-          </ha-tab>
-          <ha-tab
+          </sl-tab>
+          <sl-tab
+            slot="nav"
             id="panel-tab-print-save_in_cloud"
-            page-name="print-save_in_cloud"
+            panel="print-save_in_cloud"
           >
             ${this._tabPrintSave}
-          </ha-tab>
+          </sl-tab>
           ${DEBUG // eslint-disable-line @typescript-eslint/no-unnecessary-condition
             ? html`
-                <ha-tab id="panel-tab-debug" page-name="debug">
+                <sl-tab slot="nav" id="panel-tab-debug" panel="debug">
                   ${this._tabDebug}
-                </ha-tab>
+                </sl-tab>
               `
             : null}
-        </ha-tabs>
+        </sl-tab-group>
       </div>
       <div class="view">${this.getView(this.route)}</div>
     `;
@@ -350,18 +346,7 @@ export class AnycubicCloudPanel extends LitElement {
   };
 
   handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const index = ev.detail.index;
-    let newPage: string | undefined;
-    const tabs = (ev.currentTarget as HTMLElement).querySelectorAll("ha-tab");
-    newPage = tabs[index].getAttribute("page-name") || undefined;
-    if (!newPage) {
-      const tab = ev
-        .composedPath()
-        .find(
-          (el) => (el as HTMLElement).getAttribute("page-name") !== null,
-        ) as HTMLElement | undefined;
-      newPage = tab?.getAttribute("page-name") || undefined;
-    }
+    const newPage = ev.detail.name;
     if (newPage && newPage !== getPage(this.route)) {
       navigateToPage(this, newPage);
       this.requestUpdate();
@@ -398,7 +383,7 @@ export class AnycubicCloudPanel extends LitElement {
         line-height: 20px;
         flex-grow: 1;
       }
-      ha-tabs {
+      sl-tab-group {
         margin-left: max(env(safe-area-inset-left), 24px);
         margin-right: max(env(safe-area-inset-right), 24px);
         --paper-tabs-selection-bar-color: var(
