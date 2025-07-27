@@ -9880,8 +9880,12 @@
           });
         })(this, t.currentTarget.printer_id), this.requestUpdate();
       }, this.handlePageSelected = t => {
-        const e = t.composedPath().find(t => null !== t.getAttribute("page-name")),
-          i = null == e ? void 0 : e.getAttribute("page-name");
+        const e = t.detail.index;
+        let i;
+        if (i = t.currentTarget.querySelectorAll("ha-tab")[e].getAttribute("page-name") || void 0, !i) {
+          const e = t.composedPath().find(t => null !== t.getAttribute("page-name"));
+          i = (null == e ? void 0 : e.getAttribute("page-name")) || void 0;
+        }
         i && i !== mi(this.route) ? (((t, e, i = !1) => {
           const r = t.route.prefix,
             n = gi(t.route),
