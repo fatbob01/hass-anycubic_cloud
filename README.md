@@ -76,6 +76,14 @@ Current features:
 7. Select your printer, then you're good to go!
 8. Optionally configure more options in the home assistant integration `configure` menus.
 
+### Sensors
+
+Sensor entities are created automatically for each printer once the
+integration has been set up. These cover printer state, job progress and ACE
+metrics. You can use them in dashboards or automations like any other Home
+Assistant entity. When MQTT is enabled, updates are delivered in real time;
+otherwise values are refreshed every minute via the cloud API.
+
 
 ### Slicer authentication
 
