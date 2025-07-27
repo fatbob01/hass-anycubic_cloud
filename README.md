@@ -1,3 +1,4 @@
+> this integration has been forked to get the integration back up and running.  Successfully tested on a Kobra S1 Combo.
 > [!NOTE]  
 > Anycubic have been attempting to block MQTT access, see [here](https://github.com/WaresWichall/hass-anycubic_cloud/issues/33)
 > 
