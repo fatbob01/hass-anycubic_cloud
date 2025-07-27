@@ -290,42 +290,25 @@ export class AnycubicPrintercardConfigure extends LitElement {
   private _renderMenu(): LitTemplateResult {
     return html`
       <div class="header">
-        <ha-tabs
-          scrollable
-          attr-for-selected="page-name"
-          .selected=${this.configPage}
-          @MDCTabBar:activated=${this._handlePageSelected}
-          @selected=${this._handlePageSelected}
-        >
-          <ha-tab id="config-tab-main" page-name="main"
-            >${this._tabMain}</ha-tab
+        <sl-tab-group @sl-tab-show=${this._handlePageSelected}>
+          <sl-tab slot="nav" id="config-tab-main" panel="main"
+            >${this._tabMain}</sl-tab
           >
-          <ha-tab id="config-tab-stats" page-name="stats"
-            >${this._tabStats}</ha-tab
+          <sl-tab slot="nav" id="config-tab-stats" panel="stats"
+            >${this._tabStats}</sl-tab
           >
           ${this.hasColorbox
-            ? html`<ha-tab id="config-tab-colours" page-name="colours">
+            ? html`<sl-tab slot="nav" id="config-tab-colours" panel="colours">
                 ${this._tabColours}
-              </ha-tab>`
+              </sl-tab>`
             : nothing}
-        </ha-tabs>
+        </sl-tab-group>
       </div>
     `;
   }
 
   private _handlePageSelected = (ev: HASSDomEvent<PageChangeDetail>): void => {
-    const index = ev.detail.index;
-    let newPage: string | undefined;
-    const tabs = (ev.currentTarget as HTMLElement).querySelectorAll("ha-tab");
-    newPage = tabs[index].getAttribute("page-name") || undefined;
-    if (!newPage) {
-      const tab = ev
-        .composedPath()
-        .find(
-          (el) => (el as HTMLElement).getAttribute("page-name") !== null,
-        ) as HTMLElement | undefined;
-      newPage = tab?.getAttribute("page-name") || undefined;
-    }
+    const newPage = ev.detail.name;
     if (newPage && newPage !== this.configPage) {
       this.configPage = newPage;
     }
@@ -510,7 +493,7 @@ export class AnycubicPrintercardConfigure extends LitElement {
         margin-top: var(--header-height);
       }
 
-      ha-tabs {
+      sl-tab-group {
         margin-left: max(env(safe-area-inset-left), 24px);
         margin-right: max(env(safe-area-inset-right), 24px);
         --paper-tabs-selection-bar-color: var(--primary-color);
