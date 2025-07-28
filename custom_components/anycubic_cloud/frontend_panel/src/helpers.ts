@@ -1,7 +1,5 @@
-import { utc as dfnsUtc } from "@date-fns/utc";
 import {
   Duration as dfnsDuration,
-  format as dfnsFormat,
   intervalToDuration as dfnsIntervalToDuration,
 } from "date-fns";
 
@@ -641,6 +639,7 @@ export const formatFutureTime = (
   futureSeconds: number | string | undefined,
   round: boolean,
   use_24hr: boolean,
+  timeZone?: string,
 ): string => {
   if (
     futureSeconds !== 0 &&
@@ -648,11 +647,16 @@ export const formatFutureTime = (
   ) {
     return "invalid time";
   }
-  const fmtSeconds = round ? "" : ":ss";
-  const fmtString = use_24hr ? `HH:mm${fmtSeconds}` : `h:mm${fmtSeconds} a`;
   const newDate = new Date();
   newDate.setSeconds(newDate.getSeconds() + Number(futureSeconds));
-  return dfnsFormat(newDate, fmtString, { in: dfnsUtc });
+  const options: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+    minute: "2-digit",
+    ...(round ? {} : { second: "2-digit" }),
+    hour12: !use_24hr,
+    timeZone,
+  };
+  return new Intl.DateTimeFormat(undefined, options).format(newDate);
 };
 
 export const calculateTimeStat = (
@@ -660,12 +664,13 @@ export const calculateTimeStat = (
   timeType: CalculatedTimeType,
   round: boolean = false,
   use_24hr: boolean = false,
+  timeZone?: string,
 ): string => {
   switch (timeType) {
     case CalculatedTimeType.Remaining:
       return formatDuration(time, round);
     case CalculatedTimeType.ETA:
-      return formatFutureTime(time, round, use_24hr);
+      return formatFutureTime(time, round, use_24hr, timeZone);
     case CalculatedTimeType.Elapsed:
       return formatDuration(time, round);
     default:

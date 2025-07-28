@@ -7,6 +7,7 @@ import { calculateTimeStat, getEntityTotalSeconds } from "../../../helpers";
 import {
   CalculatedTimeType,
   HassEntity,
+  HomeAssistant,
   LitTemplateResult,
 } from "../../../types";
 
@@ -31,6 +32,9 @@ export class AnycubicPrintercardStatTime extends LitElement {
 
   @property({ type: Boolean })
   public use_24hr?: boolean;
+
+  @property()
+  public hass!: HomeAssistant;
 
   @property({ attribute: "is-seconds", type: Boolean })
   public isSeconds?: boolean;
@@ -84,6 +88,7 @@ export class AnycubicPrintercardStatTime extends LitElement {
         this.timeType,
         this.round,
         this.use_24hr,
+        this.hass.config.time_zone,
       )}
     ></anycubic-printercard-stat-line>`;
   }

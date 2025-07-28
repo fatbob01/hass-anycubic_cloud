@@ -99,6 +99,9 @@ export interface HomeAssistant {
       };
     };
   };
+  config: {
+    time_zone: string;
+  };
   callApi: <T>(
     method: "GET" | "POST" | "PUT" | "DELETE",
     path: string,
