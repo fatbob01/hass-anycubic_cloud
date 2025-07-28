@@ -385,6 +385,7 @@ export class AnycubicPrintercardStatsComponent extends LitElement {
           case PrinterCardStatType.ETA:
             return html`
               <anycubic-printercard-stat-time
+                .hass=${this.hass}
                 .timeEntity=${this._entETA}
                 .timeType=${condition}
                 .name=${this._statTranslations[condition]}
@@ -396,6 +397,7 @@ export class AnycubicPrintercardStatsComponent extends LitElement {
           case PrinterCardStatType.Elapsed:
             return html`
               <anycubic-printercard-stat-time
+                .hass=${this.hass}
                 .timeEntity=${this._entElapsed}
                 .timeType=${condition}
                 .name=${this._statTranslations[condition]}
@@ -408,6 +410,7 @@ export class AnycubicPrintercardStatsComponent extends LitElement {
           case PrinterCardStatType.Remaining:
             return html`
               <anycubic-printercard-stat-time
+                .hass=${this.hass}
                 .timeEntity=${this._entRemaining}
                 .timeType=${condition}
                 .name=${this._statTranslations[condition]}
