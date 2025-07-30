@@ -3,14 +3,17 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from typing import cast
 
 from .const import (
     CONF_CARD_CONFIG,
+    CONF_PRINTER_ID_LIST,
     COORDINATOR,
     DOMAIN,
     PLATFORMS,
 )
 from .coordinator import AnycubicCloudDataUpdateCoordinator
+from .api import AnycubicCloudAPI
 from .panel import async_register_panel, async_unregister_panel
 from .services import SERVICES
 
@@ -21,8 +24,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = AnycubicCloudDataUpdateCoordinator(hass, entry)
 
     await coordinator.async_config_entry_first_refresh()
+
+    api = cast(AnycubicCloudAPI, coordinator.anycubic_api)
+    printers = [
+        coordinator.get_printer_for_id(pid)
+        for pid in entry.data.get(CONF_PRINTER_ID_LIST, [])
+    ]
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         COORDINATOR: coordinator,
+        "api": api,
+        "printers": printers,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
