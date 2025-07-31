@@ -24,7 +24,7 @@ from .const import (
     PrinterEntityType,
 )
 from .entity import AnycubicCloudEntity, AnycubicCloudEntityDescription
-from .helpers import printer_attributes_for_key
+from .helpers import build_printer_device_info, printer_attributes_for_key
 
 if TYPE_CHECKING:
     from .coordinator import AnycubicCloudDataUpdateCoordinator
@@ -142,9 +142,12 @@ async def async_setup_entry(
     printers = data["printers"]
     cam_buttons: list[ButtonEntity] = []
     for printer in printers:
-        if printer and getattr(printer, "has_peripheral_camera", False):
-            cam_buttons.append(AnycubicCameraStartButton(printer, api))
-            cam_buttons.append(AnycubicCameraStopButton(printer, api))
+        has_cam = getattr(printer, "has_peripheral_camera", False)
+        if callable(has_cam):
+            has_cam = has_cam()
+        if has_cam:
+            cam_buttons.append(AnycubicCameraStartButton(printer, api, coordinator))
+            cam_buttons.append(AnycubicCameraStopButton(printer, api, coordinator))
 
     if cam_buttons:
         async_add_entities(cam_buttons)
@@ -187,13 +190,14 @@ class _AnycubicCameraButton(ButtonEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, printer, api, order_id, name_suffix, icon) -> None:
+    def __init__(self, printer, api, coordinator, order_id, name_suffix, icon) -> None:
         self._printer = printer
         self._api = api
         self._order_id = order_id
         self._attr_unique_id = f"{printer.machine_mac}_{name_suffix.replace(' ', '_').lower()}"
         self._attr_name = f"{printer.name} {name_suffix}"
         self._attr_icon = icon
+        self._attr_device_info = build_printer_device_info(coordinator.data, printer.id)
 
     async def async_press(self) -> None:
         await self._api.async_send_order(self._order_id, device_id=self._printer.id)
@@ -202,12 +206,26 @@ class _AnycubicCameraButton(ButtonEntity):
 class AnycubicCameraStartButton(_AnycubicCameraButton):
     """Send CAMERA_OPEN (1001)."""
 
-    def __init__(self, printer, api) -> None:
-        super().__init__(printer, api, AnycubicOrderID.CAMERA_OPEN, "Start Camera", ICON_CAM_START)
+    def __init__(self, printer, api, coordinator) -> None:
+        super().__init__(
+            printer,
+            api,
+            coordinator,
+            AnycubicOrderID.CAMERA_OPEN,
+            "Start Camera",
+            ICON_CAM_START,
+        )
 
 
 class AnycubicCameraStopButton(_AnycubicCameraButton):
     """Send CAMERA_CLOSE (1002)."""
 
-    def __init__(self, printer, api) -> None:
-        super().__init__(printer, api, AnycubicOrderID.CAMERA_CLOSE, "Stop Camera", ICON_CAM_STOP)
+    def __init__(self, printer, api, coordinator) -> None:
+        super().__init__(
+            printer,
+            api,
+            coordinator,
+            AnycubicOrderID.CAMERA_CLOSE,
+            "Stop Camera",
+            ICON_CAM_STOP,
+        )

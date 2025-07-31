@@ -8,16 +8,15 @@ from datetime import timedelta
 import boto3
 from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .api import AnycubicCloudAPI
-from .api.const import AnycubicOrderID
-from .const import COORDINATOR, CONF_PRINTER_ID_LIST, DOMAIN
+from .const import COORDINATOR, DOMAIN
 from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
 from .coordinator import AnycubicCloudDataUpdateCoordinator
+from .helpers import build_printer_device_info
 
 _LOGGER = logging.getLogger(__name__)
 _REFRESH = timedelta(minutes=55)
@@ -31,16 +30,9 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator: AnycubicCloudDataUpdateCoordinator = data[COORDINATOR]
     api: AnycubicCloudAPI = data["api"]
-    printers = [
-        coordinator.get_printer_for_id(pid)
-        for pid in entry.data.get(CONF_PRINTER_ID_LIST, [])
-    ]
+    printers = [p for p in data["printers"] if p and p.has_peripheral_camera()]
 
-    cams = [
-        AnycubicCloudCamera(printer, api)
-        for printer in printers
-        if printer and getattr(printer, "has_peripheral_camera", False)
-    ]
+    cams = [AnycubicCloudCamera(printer, api, coordinator) for printer in printers]
     async_add_entities(cams, update_before_add=True)
 
 
@@ -49,10 +41,16 @@ class AnycubicCloudCamera(Camera):
 
     _attr_is_streaming = True
 
-    def __init__(self, printer: AnycubicPrinter, api: AnycubicCloudAPI) -> None:
+    def __init__(
+        self,
+        printer: AnycubicPrinter,
+        api: AnycubicCloudAPI,
+        coordinator: AnycubicCloudDataUpdateCoordinator,
+    ) -> None:
         super().__init__()
         self._printer = printer
         self._api = api
+        self._attr_device_info = build_printer_device_info(coordinator.data, printer.id)
         self._stream_url: str | None = None
         self._coordinator: DataUpdateCoordinator | None = None
         self._attr_name = f"{printer.name} Camera"
