@@ -21,6 +21,7 @@ class AnycubicCloudEntityDescription(EntityDescription):
     """Generic Anycubic Cloud entity description."""
 
     printer_entity_type: PrinterEntityType | None = None
+    requires_peripheral_camera: bool = False
 
 
 class AnycubicCloudEntity(CoordinatorEntity[AnycubicCloudDataUpdateCoordinator], Entity):
