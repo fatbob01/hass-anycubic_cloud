@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import boto3
@@ -78,6 +78,48 @@ def _get_stream_url(token: AnycubicCameraToken) -> str | None:
         PlaybackMode="LIVE",
         DiscontinuityMode="ALWAYS",
     )["HLSStreamingSessionURL"]
+
+
+def _get_snapshot(token: AnycubicCameraToken) -> bytes | None:
+    """Return a JPEG snapshot for the given token."""
+    kvs = boto3.client(
+        "kinesisvideo",
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+
+    streams = kvs.list_streams(MaxResults=1).get("StreamInfoList") or []
+    if not streams:
+        return None
+
+    stream_name = streams[0]["StreamName"]
+    endpoint = kvs.get_data_endpoint(
+        StreamName=stream_name,
+        APIName="GET_IMAGES",
+    )["DataEndpoint"]
+    kav = boto3.client(
+        "kinesis-video-archived-media",
+        endpoint_url=endpoint,
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+
+    now = datetime.utcnow()
+    images = kav.get_images(
+        StreamName=stream_name,
+        ImageSelectorType="SERVER_TIMESTAMP",
+        StartTimestamp=now - timedelta(seconds=1),
+        EndTimestamp=now,
+        Format="JPEG",
+        MaxResults=1,
+    ).get("Images") or []
+    if not images:
+        return None
+    return images[0].get("ImageContent")
 
 
 async def async_setup_entry(
@@ -161,3 +203,29 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
         if not self._stream_url:
             await self._refresh()
         return self._stream_url
+
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return a still image from the camera."""
+        if not self._stream_url:
+            await self._refresh()
+
+        printer: AnycubicPrinter | None = self.coordinator.get_printer_for_id(
+            self._printer_id
+        )
+        if not printer:
+            return None
+
+        try:
+            token = await self.coordinator.anycubic_api._send_anycubic_camera_open_order(
+                printer
+            )
+            if not token:
+                return None
+            return await self.hass.async_add_executor_job(_get_snapshot, token)
+        except Exception as exc:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Failed to fetch camera image for %s: %s", printer.name, exc
+            )
+            return None
