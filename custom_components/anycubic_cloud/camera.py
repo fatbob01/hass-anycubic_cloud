@@ -30,7 +30,7 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator: AnycubicCloudDataUpdateCoordinator = data[COORDINATOR]
     api: AnycubicCloudAPI = data["api"]
-    printers = [p for p in data["printers"] if p and p.has_peripheral_camera()]
+    printers = [p for p in data["printers"] if p and p.has_peripheral_camera]
 
     cams = [AnycubicCloudCamera(printer, api, coordinator) for printer in printers]
     async_add_entities(cams, update_before_add=True)

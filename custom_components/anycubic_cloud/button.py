@@ -142,10 +142,7 @@ async def async_setup_entry(
     printers = data["printers"]
     cam_buttons: list[ButtonEntity] = []
     for printer in printers:
-        has_cam = getattr(printer, "has_peripheral_camera", False)
-        if callable(has_cam):
-            has_cam = has_cam()
-        if has_cam:
+        if getattr(printer, "has_peripheral_camera", False):
             cam_buttons.append(AnycubicCameraStartButton(printer, api, coordinator))
             cam_buttons.append(AnycubicCameraStopButton(printer, api, coordinator))
 
