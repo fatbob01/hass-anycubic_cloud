@@ -20,6 +20,7 @@ from ..const.mqtt import (
     MQTT_TIMEOUT,
 )
 from ..data_models.consumable import AnycubicConsumableData
+from ..data_models.orders import AnycubicBaseOrderRequest
 from ..exceptions.error_strings import ErrorsMQTTClient
 from ..exceptions.exceptions import (
     AnycubicMQTTClientError,
@@ -41,6 +42,22 @@ if TYPE_CHECKING:
 
 
 class AnycubicMQTTAPI(AnycubicAPIFunctions):
+    """Existing MQTT helper (publishes/receives on broker)."""
+
+    # ---------------------------------------------------------------------
+    # Camera buttons & other order-based helpers expect every API variant
+    # to expose async_send_order(order_id, device_id=None, **kw). We don't
+    # send the order via MQTT; instead delegate to the Cloud HTTP API the
+    # integration already uses for slice uploads, etc.
+    # ---------------------------------------------------------------------
+    async def async_send_order(self, order_id: int, device_id: str | None = None):
+        """Forward Anycubic 'order' (1001 camera open, 1002 camera close, ...)
+        to the underlying Cloud API so callers don't care which API mode
+        (HTTP-only vs MQTT) the integration is running in."""
+
+        request = AnycubicBaseOrderRequest(order_id=order_id, printer_id=device_id)
+        return await self._send_anycubic_order(order_request=request, raw_data=True)
+
     __slots__ = (
         "_mqtt_client",
         "_mqtt_subscribed_printers",
