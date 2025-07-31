@@ -1,11 +1,16 @@
 """DataUpdateCoordinator for the Anycubic Cloud integration."""
+
 from __future__ import annotations
 
 import asyncio
 import time
 import traceback
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 from aiohttp import CookieJar
 from homeassistant.config_entries import ConfigEntry
@@ -61,6 +66,7 @@ from .helpers import (
     check_descriptor_state_ace_not_supported,
     check_descriptor_state_ace_primary_unavailable,
     check_descriptor_state_ace_secondary_unavailable,
+    check_descriptor_state_camera_unavailable,
     check_descriptor_state_drying_unavailable,
     check_descriptor_status_not_fdm,
     check_descriptor_status_not_lcd,
@@ -104,11 +110,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mqtt_last_refresh: int | None = None
         self._printer_device_map: dict[str, int] | None = None
         mqtt_connect_mode = self.entry.options.get(CONF_MQTT_CONNECT_MODE)
-        self._mqtt_connection_mode = (
-            AnycubicMQTTConnectMode.Printing_Only
-            if mqtt_connect_mode is None
-            else mqtt_connect_mode
-        )
+        self._mqtt_connection_mode = AnycubicMQTTConnectMode.Printing_Only if mqtt_connect_mode is None else mqtt_connect_mode
         self._unregistered_descriptors: dict[int, dict[str, list[AnycubicCloudEntityDescription]]] = dict()
         super().__init__(
             hass,
@@ -125,37 +127,29 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self._anycubic_api
 
     def _any_printers_are_printing(self) -> bool:
-        return any([
-            printer.is_busy for printer_id, printer in self._anycubic_printers.items()
-        ])
+        return any([printer.is_busy for printer_id, printer in self._anycubic_printers.items()])
 
     def _any_printers_are_drying(self) -> bool:
-        return any([
-            (
-                printer.primary_drying_status_is_drying or
-                printer.secondary_drying_status_is_drying
-            ) for printer_id, printer in self._anycubic_printers.items()
-        ])
+        return any(
+            [
+                (printer.primary_drying_status_is_drying or printer.secondary_drying_status_is_drying)
+                for printer_id, printer in self._anycubic_printers.items()
+            ]
+        )
 
     def _any_printers_are_online(self) -> bool:
-        return any([
-            (
-                printer.printer_online or printer.is_busy
-            ) for printer_id, printer in self._anycubic_printers.items()
-        ])
+        return any([(printer.printer_online or printer.is_busy) for printer_id, printer in self._anycubic_printers.items()])
 
     def _no_printers_are_printing(self) -> bool:
-        return all([
-            not printer.is_busy and
-            (not printer.latest_project_print_in_progress)
-            for printer_id, printer in self._anycubic_printers.items()
-        ])
+        return all(
+            [
+                not printer.is_busy and (not printer.latest_project_print_in_progress)
+                for printer_id, printer in self._anycubic_printers.items()
+            ]
+        )
 
     def _check_mqtt_connection_last_action_waiting(self) -> bool:
-        if (
-            self._mqtt_last_action is not None and
-            int(time.time()) < self._mqtt_last_action + MQTT_ACTION_RESPONSE_ALIVE_SECONDS
-        ):
+        if self._mqtt_last_action is not None and int(time.time()) < self._mqtt_last_action + MQTT_ACTION_RESPONSE_ALIVE_SECONDS:
             return True
 
         return False
@@ -164,27 +158,18 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._check_mqtt_connection_last_action_waiting():
             return True
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Only and
-            self._any_printers_are_printing()
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Only and self._any_printers_are_printing():
+            return True
+
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Drying and (
+            self._any_printers_are_printing() or self._any_printers_are_drying()
         ):
             return True
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Drying and
-            (self._any_printers_are_printing() or self._any_printers_are_drying())
-        ):
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Device_Online and self._any_printers_are_online():
             return True
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Device_Online and
-            self._any_printers_are_online()
-        ):
-            return True
-
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Always
-        ):
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Always:
             return True
 
         else:
@@ -194,27 +179,18 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if self._check_mqtt_connection_last_action_waiting():
             return False
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Only and
-            self._no_printers_are_printing()
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Only and self._no_printers_are_printing():
+            return True
+
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Drying and (
+            self._no_printers_are_printing() and not self._any_printers_are_drying()
         ):
             return True
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Printing_Drying and
-            (self._no_printers_are_printing() and not self._any_printers_are_drying())
-        ):
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Device_Online and not self._any_printers_are_online():
             return True
 
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Device_Online and
-            not self._any_printers_are_online()
-        ):
-            return True
-
-        elif (
-            self._mqtt_connection_mode == AnycubicMQTTConnectMode.Always
-        ):
+        elif self._mqtt_connection_mode == AnycubicMQTTConnectMode.Always:
             return False
 
         else:
@@ -295,12 +271,8 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
 
         attributes = {
-            "ace_spools": {
-                "spool_info": primary_ace_spool_info
-            },
-            "secondary_ace_spools": {
-                "spool_info": secondary_ace_spool_info
-            },
+            "ace_spools": {"spool_info": primary_ace_spool_info},
+            "secondary_ace_spools": {"spool_info": secondary_ace_spool_info},
             "file_list_local": {
                 "file_info": file_list_local,
             },
@@ -383,21 +355,19 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
 
         return {
-            'states': states,
-            'attributes': attributes,
+            "states": states,
+            "attributes": attributes,
         }
 
     def _build_coordinator_data(self) -> dict[str, Any]:
         data_dict: dict[str, Any] = dict()
 
-        data_dict['user_info'] = {
-            "id": self.anycubic_api.anycubic_auth.api_user_id
-        }
+        data_dict["user_info"] = {"id": self.anycubic_api.anycubic_auth.api_user_id}
 
-        data_dict['printers'] = dict()
+        data_dict["printers"] = dict()
 
         for printer_id, printer in self._anycubic_printers.items():
-            data_dict['printers'][printer_id] = self._build_printer_dict(printer)
+            data_dict["printers"][printer_id] = self._build_printer_dict(printer)
 
         return data_dict
 
@@ -448,12 +418,13 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if platform not in self._unregistered_descriptors[printer_id]:
                     continue
 
-                status_attr: dict[str, Any] | None = printer_attributes_for_key(self, printer_id, 'current_status')
+                status_attr: dict[str, Any] | None = printer_attributes_for_key(self, printer_id, "current_status")
                 if not status_attr:
                     raise ConfigEntryError(f"Printer {printer_id} status attributes not found.")
-                material_type = status_attr['material_type']
+                material_type = status_attr["material_type"]
                 connected_ace_units = printer_state_connected_ace_units(self, printer_id)
                 supports_ace = printer_state_supports_ace(self, printer_id)
+
                 has_camera = status_attr['peripherals'].get('camera')
 
                 remaining_unregistered_descriptors = list()
@@ -464,13 +435,11 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             description,
                             material_type,
                         )
-                        or
-                        check_descriptor_status_not_fdm(
+                        or check_descriptor_status_not_fdm(
                             description,
                             material_type,
                         )
-                        or
-                        check_descriptor_state_ace_not_supported(
+                        or check_descriptor_state_ace_not_supported(
                             description,
                             supports_ace,
                         )
@@ -482,14 +451,12 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             supports_ace,
                             connected_ace_units,
                         )
-                        or
-                        check_descriptor_state_ace_secondary_unavailable(
+                        or check_descriptor_state_ace_secondary_unavailable(
                             description,
                             supports_ace,
                             connected_ace_units,
                         )
-                        or
-                        check_descriptor_state_drying_unavailable(
+                        or check_descriptor_state_drying_unavailable(
                             description,
                             supports_ace,
                             connected_ace_units,
@@ -504,14 +471,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     elif description.printer_entity_type is None:
                         raise ConfigEntryError(f"Descriptor {description.key} is missing printer_entity_type.")
 
-                    new_entities.append(
-                        entity_constructor(
-                            self.hass,
-                            self,
-                            printer_id,
-                            description
-                        )
-                    )
+                    new_entities.append(entity_constructor(self.hass, self, printer_id, description))
 
                 if len(remaining_unregistered_descriptors) > 0:
                     self._unregistered_descriptors[printer_id][platform] = remaining_unregistered_descriptors
@@ -524,14 +484,10 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             async_add_entities(new_entities)
 
         _add_entities_for_unregistered_descriptors()
-        self.entry.async_on_unload(
-            self.async_add_listener(_add_entities_for_unregistered_descriptors)
-        )
+        self.entry.async_on_unload(self.async_add_listener(_add_entities_for_unregistered_descriptors))
 
     async def _async_print_job_started(self) -> None:
-        LOGGER.debug(
-            f"Print job started, forcing state update in {PRINT_JOB_STARTED_UPDATE_DELAY} seconds."
-        )
+        LOGGER.debug(f"Print job started, forcing state update in {PRINT_JOB_STARTED_UPDATE_DELAY} seconds.")
         await asyncio.sleep(PRINT_JOB_STARTED_UPDATE_DELAY)
         await self.force_state_update()
 
@@ -579,26 +535,16 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return False
 
         return (
-            not self.anycubic_api.mqtt_is_started and
-            not self.hass.is_stopping and
-            self.hass.state is CoreState.running and
-            (
-                self._check_mqtt_connection_modes_active() or
-                self._mqtt_manually_connected
-            )
+            not self.anycubic_api.mqtt_is_started
+            and not self.hass.is_stopping
+            and self.hass.state is CoreState.running
+            and (self._check_mqtt_connection_modes_active() or self._mqtt_manually_connected)
         )
 
     def _anycubic_mqtt_connection_should_stop(self) -> bool:
 
-        return (
-            self.anycubic_api.mqtt_is_started and
-            (
-                self.hass.is_stopping or
-                (
-                    self._anycubic_mqtt_connection_is_idle() and
-                    not self._mqtt_manually_connected
-                )
-            )
+        return self.anycubic_api.mqtt_is_started and (
+            self.hass.is_stopping or (self._anycubic_mqtt_connection_is_idle() and not self._mqtt_manually_connected)
         )
 
     def _anycubic_mqtt_connection_is_idle(self) -> bool:
@@ -623,15 +569,11 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if self._anycubic_mqtt_connection_should_start():
 
                 for printer_id, printer in self._anycubic_printers.items():
-                    self.anycubic_api.mqtt_add_subscribed_printer(
-                        printer
-                    )
+                    self.anycubic_api.mqtt_add_subscribed_printer(printer)
 
                 if self._mqtt_task is None:
                     LOGGER.debug("Starting Anycubic MQTT Task.")
-                    self._mqtt_task = self.hass.async_add_executor_job(
-                        self.anycubic_api.connect_mqtt
-                    )
+                    self._mqtt_task = self.hass.async_add_executor_job(self.anycubic_api.connect_mqtt)
 
             elif self._anycubic_mqtt_connection_should_stop():
                 await self._stop_anycubic_mqtt_connection()
@@ -721,12 +663,8 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
             debug_all: bool = bool(self.entry.options.get(CONF_DEBUG_DEPRECATED))
-            debug_mqtt_msg: bool = bool(
-                self.entry.options.get(CONF_DEBUG_MQTT_MSG, debug_all)
-            )
-            debug_api_calls: bool = bool(
-                self.entry.options.get(CONF_DEBUG_API_CALLS, debug_all)
-            )
+            debug_mqtt_msg: bool = bool(self.entry.options.get(CONF_DEBUG_MQTT_MSG, debug_all))
+            debug_api_calls: bool = bool(self.entry.options.get(CONF_DEBUG_API_CALLS, debug_all))
 
             self._anycubic_api.set_mqtt_log_all_messages(debug_mqtt_msg)
             self._anycubic_api.set_log_api_call_info(debug_api_calls)
@@ -752,9 +690,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise
 
         except Exception as error:
-            raise ConfigEntryAuthFailed(
-                f"Coordinator authentication failed with unknown Error. Check credentials {error}"
-            )
+            raise ConfigEntryAuthFailed(f"Coordinator authentication failed with unknown Error. Check credentials {error}")
 
     async def _setup_anycubic_printer_objects(self) -> None:
         for printer_id in self.entry.data[CONF_PRINTER_ID_LIST]:
@@ -799,9 +735,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._mqtt_last_action = int(time.time())
         await self._check_anycubic_mqtt_connection()
         if not await self.anycubic_api.mqtt_wait_for_connect():
-            raise HomeAssistantError(
-                "Anycubic MQTT Timed out waiting for connection, try manually enabling MQTT."
-            )
+            raise HomeAssistantError("Anycubic MQTT Timed out waiting for connection, try manually enabling MQTT.")
 
     async def _async_setup(self) -> None:
         setup_retries = 0
@@ -814,9 +748,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if setup_retries >= API_SETUP_RETRIES:
                     raise ConfigEntryError(error) from error
                 setup_retries += 1
-                LOGGER.warning(
-                    f"Error during Anycubic Cloud setup, retrying in {API_SETUP_RETRY_INTERVAL_SECONDS} seconds."
-                )
+                LOGGER.warning(f"Error during Anycubic Cloud setup, retrying in {API_SETUP_RETRY_INTERVAL_SECONDS} seconds.")
                 await asyncio.sleep(API_SETUP_RETRY_INTERVAL_SECONDS)
 
     async def get_anycubic_updates(self) -> bool:
@@ -904,8 +836,8 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
 
             if printer and (
-                event_key.startswith(ENTITY_ID_DRYING_START_PRESET_) or
-                event_key.startswith(f"secondary_{ENTITY_ID_DRYING_START_PRESET_}")
+                event_key.startswith(ENTITY_ID_DRYING_START_PRESET_)
+                or event_key.startswith(f"secondary_{ENTITY_ID_DRYING_START_PRESET_}")
             ):
                 preset_duration, preset_temperature = get_drying_preset_from_entry_options(
                     self.entry.options,
@@ -926,14 +858,14 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     box_id=box_id,
                 )
 
-            elif printer and event_key == 'refresh_mqtt_connection':
+            elif printer and event_key == "refresh_mqtt_connection":
                 await self.refresh_anycubic_mqtt_connection()
 
-            elif printer and event_key == 'request_file_list_cloud':
+            elif printer and event_key == "request_file_list_cloud":
                 await self._connect_mqtt_for_action_response()
                 await self.refresh_cloud_files()
 
-            elif printer and event_key == 'request_file_list_local':
+            elif printer and event_key == "request_file_list_local":
                 prev_file_list = printer.local_file_list_object
                 await self._connect_mqtt_for_action_response()
                 await printer.request_local_file_list()
@@ -942,27 +874,27 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     f"Anycubic coordinator {self.entry.entry_id} {printer.id} local file list check",
                 )
 
-            elif printer and event_key == 'request_file_list_udisk':
+            elif printer and event_key == "request_file_list_udisk":
                 await self._connect_mqtt_for_action_response()
                 await printer.request_udisk_file_list()
 
-            elif printer and event_key == 'drying_stop':
+            elif printer and event_key == "drying_stop":
                 await self._connect_mqtt_for_action_response()
                 await printer.multi_color_box_drying_stop()
 
-            elif printer and event_key == 'secondary_drying_stop':
+            elif printer and event_key == "secondary_drying_stop":
                 await self._connect_mqtt_for_action_response()
                 await printer.multi_color_box_drying_stop(box_id=1)
 
-            elif printer and event_key == 'pause_print':
+            elif printer and event_key == "pause_print":
                 await self._connect_mqtt_for_action_response()
                 await printer.pause_print()
 
-            elif printer and event_key == 'resume_print':
+            elif printer and event_key == "resume_print":
                 await self._connect_mqtt_for_action_response()
                 await printer.resume_print()
 
-            elif printer and event_key == 'cancel_print':
+            elif printer and event_key == "cancel_print":
                 await self._connect_mqtt_for_action_response()
                 await printer.cancel_print()
 
@@ -998,15 +930,15 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         try:
 
-            if printer and event_key == 'fw_version':
+            if printer and event_key == "fw_version":
                 await self._connect_mqtt_for_action_response()
                 await printer.update_printer_firmware()
 
-            elif printer and event_key == 'multi_color_box_fw_version':
+            elif printer and event_key == "multi_color_box_fw_version":
                 await self._connect_mqtt_for_action_response()
                 await printer.update_printer_multi_color_box_firmware()
 
-            elif printer and event_key == 'secondary_multi_color_box_fw_version':
+            elif printer and event_key == "secondary_multi_color_box_fw_version":
                 await self._connect_mqtt_for_action_response()
                 await printer.update_printer_multi_color_box_firmware(box_id=1)
 
@@ -1025,14 +957,14 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     ) -> None:
         printer = self.get_printer_for_id(printer_id)
 
-        if event_key == 'manual_mqtt_connection_enabled':
+        if event_key == "manual_mqtt_connection_enabled":
             self._mqtt_manually_connected = True
 
-        elif printer and event_key == 'multi_color_box_runout_refill':
+        elif printer and event_key == "multi_color_box_runout_refill":
             await self._connect_mqtt_for_action_response()
             await printer.multi_color_box_switch_on_auto_feed()
 
-        elif printer and event_key == 'secondary_multi_color_box_runout_refill':
+        elif printer and event_key == "secondary_multi_color_box_runout_refill":
             await self._connect_mqtt_for_action_response()
             await printer.multi_color_box_switch_on_auto_feed(box_id=1)
 
@@ -1048,14 +980,14 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     ) -> None:
         printer = self.get_printer_for_id(printer_id)
 
-        if event_key == 'manual_mqtt_connection_enabled':
+        if event_key == "manual_mqtt_connection_enabled":
             self._mqtt_manually_connected = False
 
-        elif printer and event_key == 'multi_color_box_runout_refill':
+        elif printer and event_key == "multi_color_box_runout_refill":
             await self._connect_mqtt_for_action_response()
             await printer.multi_color_box_switch_off_auto_feed()
 
-        elif printer and event_key == 'secondary_multi_color_box_runout_refill':
+        elif printer and event_key == "secondary_multi_color_box_runout_refill":
             await self._connect_mqtt_for_action_response()
             await printer.multi_color_box_switch_off_auto_feed(box_id=1)
 

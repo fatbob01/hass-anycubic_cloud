@@ -3,23 +3,46 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
+from typing import TYPE_CHECKING
 
 import boto3
 from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .api import AnycubicCloudAPI
-from .const import COORDINATOR, DOMAIN
-from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
+from .const import (
+    COORDINATOR,
+    DOMAIN,
+    PrinterEntityType,
+)
 from .coordinator import AnycubicCloudDataUpdateCoordinator
-from .helpers import build_printer_device_info
+from .entity import AnycubicCloudEntity, AnycubicCloudEntityDescription
+
+if TYPE_CHECKING:
+    from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
+
 
 _LOGGER = logging.getLogger(__name__)
 _REFRESH = timedelta(minutes=55)
+
+
+@dataclass(frozen=True)
+class AnycubicCameraEntityDescription(AnycubicCloudEntityDescription):
+    """Describes Anycubic Cloud camera entity."""
+
+
+CAMERA_TYPES: list[AnycubicCameraEntityDescription] = [
+    AnycubicCameraEntityDescription(
+        key="camera",
+        translation_key="camera",
+        printer_entity_type=PrinterEntityType.PRINTER,
+    )
+]
 
 
 async def async_setup_entry(
@@ -27,50 +50,67 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    data = hass.data[DOMAIN][entry.entry_id]
-    coordinator: AnycubicCloudDataUpdateCoordinator = data[COORDINATOR]
-    api: AnycubicCloudAPI = data["api"]
-    printers = [p for p in data["printers"] if p and p.has_peripheral_camera]
+    """Set up the Anycubic Cloud camera from a config entry."""
 
-    cams = [AnycubicCloudCamera(printer, api, coordinator) for printer in printers]
-    async_add_entities(cams, update_before_add=True)
+    coordinator: AnycubicCloudDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR]
+
+    coordinator.add_entities_for_seen_printers(
+        async_add_entities=async_add_entities,
+        entity_constructor=AnycubicCloudCamera,
+        platform=Platform.CAMERA,
+        available_descriptors=CAMERA_TYPES,
+    )
 
 
-class AnycubicCloudCamera(Camera):
+class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
     """HA camera streaming Anycubic’s cloud feed."""
 
     _attr_is_streaming = True
+    entity_description: AnycubicCameraEntityDescription
 
     def __init__(
         self,
-        printer: AnycubicPrinter,
-        api: AnycubicCloudAPI,
+        hass: HomeAssistant,
         coordinator: AnycubicCloudDataUpdateCoordinator,
+        printer_id: int,
+        entity_description: AnycubicCameraEntityDescription,
     ) -> None:
-        super().__init__()
-        self._printer = printer
-        self._api = api
-        self._attr_device_info = build_printer_device_info(coordinator.data, printer.id)
+        """Initialize the Anycubic Cloud camera."""
+        AnycubicCloudEntity.__init__(
+            self,
+            hass,
+            coordinator,
+            printer_id,
+            entity_description,
+        )
+        Camera.__init__(self)
+
         self._stream_url: str | None = None
-        self._coordinator: DataUpdateCoordinator | None = None
-        self._attr_name = f"{printer.name} Camera"
-        self._attr_unique_id = f"{printer.machine_mac}_camera"
+        self._refresh_coordinator: DataUpdateCoordinator | None = None
+
+        printer = self.coordinator.get_printer_for_id(printer_id)
+        if printer:
+            self._attr_unique_id = f"{printer.machine_mac}_camera"
 
     async def async_added_to_hass(self) -> None:
         await self._refresh()
-        self._coordinator = DataUpdateCoordinator(
+        self._refresh_coordinator = DataUpdateCoordinator(
             self.hass,
             _LOGGER,
             name="anycubic_camera_refresh",
             update_method=self._refresh,
             update_interval=_REFRESH,
         )
-        await self._coordinator.async_config_entry_first_refresh()
+        await self._refresh_coordinator.async_config_entry_first_refresh()
 
     async def _refresh(self) -> None:
         """(Re)fetch signed HLS URL via CAMERA_OPEN."""
+        printer: AnycubicPrinter | None = self.coordinator.get_printer_for_id(self._printer_id)
+        if not printer:
+            return
+
         try:
-            token = await self._api._send_anycubic_camera_open_order(self._printer)
+            token = await self.coordinator.anycubic_api._send_anycubic_camera_open_order(printer)
             if not token:
                 return
             kvs = boto3.client(
@@ -98,7 +138,7 @@ class AnycubicCloudCamera(Camera):
                 PlaybackMode="LIVE",
                 DiscontinuityMode="ALWAYS",
             )["HLSStreamingSessionURL"]
-            _LOGGER.debug("[%s] HLS URL refreshed", self._printer.name)
+            _LOGGER.debug("[%s] HLS URL refreshed", printer.name)
         except Exception as exc:  # pylint: disable=broad-except
             _LOGGER.warning("Camera refresh failed: %s", exc)
 
