@@ -101,14 +101,14 @@ CAMERA_BUTTON_TYPES: list[AnycubicButtonEntityDescription] = [
         translation_key="start_camera",
         icon=ICON_CAM_START,
         printer_entity_type=PrinterEntityType.PRINTER,
-        requires_peripheral_camera=True,
+        requires_peripheral_camera=False,
     ),
     AnycubicButtonEntityDescription(
         key="stop_camera",
         translation_key="stop_camera",
         icon=ICON_CAM_STOP,
         printer_entity_type=PrinterEntityType.PRINTER,
-        requires_peripheral_camera=True,
+        requires_peripheral_camera=False,
     ),
 ]
 
