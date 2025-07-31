@@ -3,7 +3,11 @@ from __future__ import annotations
 import re
 from enum import IntEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeVar,
+)
 
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, DeviceInfo
 
@@ -17,11 +21,13 @@ from .const import (
 )
 
 if TYPE_CHECKING:
+    from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
     from .coordinator import AnycubicCloudDataUpdateCoordinator
     from .entity import AnycubicCloudEntityDescription
 
 
 _T = TypeVar("_T")
+
 
 class AnycubicMQTTConnectMode(IntEnum):
     Printing_Only = 1
@@ -35,8 +41,8 @@ def build_printer_device_info(
     coordinator_data: dict[str, Any],
     printer_id: int,
 ) -> DeviceInfo:
-    printer_data = coordinator_data['printers'][printer_id]['states']
-    user_data = coordinator_data['user_info']
+    printer_data = coordinator_data["printers"][printer_id]["states"]
+    user_data = coordinator_data["user_info"]
     return DeviceInfo(
         identifiers={(DOMAIN, f"{user_data['id']}-{printer_data['id']}")},
         manufacturer=MANUFACTURER,
@@ -67,7 +73,7 @@ def printer_state_for_key(
     printer_id: int,
     state_key: str,
 ) -> Any:
-    return coordinator.data['printers'][printer_id]['states'][state_key]
+    return coordinator.data["printers"][printer_id]["states"][state_key]
 
 
 def printer_attributes_for_key(
@@ -75,7 +81,7 @@ def printer_attributes_for_key(
     printer_id: int,
     attribute_key: str,
 ) -> dict[str, Any] | None:
-    attr: dict[str, Any] | None = coordinator.data['printers'][printer_id]['attributes'].get(attribute_key)
+    attr: dict[str, Any] | None = coordinator.data["printers"][printer_id]["attributes"].get(attribute_key)
     return attr
 
 
@@ -87,7 +93,7 @@ def printer_state_connected_ace_units(
         printer_state_for_key(
             coordinator,
             printer_id,
-            'connected_ace_units',
+            "connected_ace_units",
         )
     )
 
@@ -100,7 +106,7 @@ def printer_state_supports_ace(
         printer_state_for_key(
             coordinator,
             printer_id,
-            'supports_function_multi_color_box',
+            "supports_function_multi_color_box",
         )
     )
 
@@ -109,20 +115,14 @@ def check_descriptor_status_not_lcd(
     description: AnycubicCloudEntityDescription,
     material_type: AnycubicPrinterMaterialType,
 ) -> bool:
-    return (
-        description.printer_entity_type == PrinterEntityType.LCD
-        and material_type != AnycubicPrinterMaterialType.RESIN
-    )
+    return description.printer_entity_type == PrinterEntityType.LCD and material_type != AnycubicPrinterMaterialType.RESIN
 
 
 def check_descriptor_status_not_fdm(
     description: AnycubicCloudEntityDescription,
     material_type: AnycubicPrinterMaterialType,
 ) -> bool:
-    return (
-        description.printer_entity_type == PrinterEntityType.FDM
-        and material_type != AnycubicPrinterMaterialType.FILAMENT
-    )
+    return description.printer_entity_type == PrinterEntityType.FDM and material_type != AnycubicPrinterMaterialType.FILAMENT
 
 
 def check_descriptor_state_ace_not_supported(
@@ -130,7 +130,8 @@ def check_descriptor_state_ace_not_supported(
     supports_ace: bool,
 ) -> bool:
     return (
-        description.printer_entity_type in [
+        description.printer_entity_type
+        in [
             PrinterEntityType.ACE_PRIMARY,
             PrinterEntityType.ACE_SECONDARY,
             PrinterEntityType.DRY_PRESET_PRIMARY,
@@ -146,7 +147,8 @@ def check_descriptor_state_ace_primary_unavailable(
     connected_ace_units: int,
 ) -> bool:
     return (
-        description.printer_entity_type in [
+        description.printer_entity_type
+        in [
             PrinterEntityType.ACE_PRIMARY,
             PrinterEntityType.DRY_PRESET_PRIMARY,
         ]
@@ -161,7 +163,8 @@ def check_descriptor_state_ace_secondary_unavailable(
     connected_ace_units: int,
 ) -> bool:
     return (
-        description.printer_entity_type in [
+        description.printer_entity_type
+        in [
             PrinterEntityType.ACE_SECONDARY,
             PrinterEntityType.DRY_PRESET_SECONDARY,
         ]
@@ -177,13 +180,8 @@ def check_descriptor_state_drying_available(
 ) -> bool:
     return (
         supports_ace
-        and (
-            description.printer_entity_type == PrinterEntityType.DRY_PRESET_PRIMARY
-            and connected_ace_units >= 1
-        ) or (
-            description.printer_entity_type == PrinterEntityType.DRY_PRESET_SECONDARY
-            and connected_ace_units >= 2
-        )
+        and (description.printer_entity_type == PrinterEntityType.DRY_PRESET_PRIMARY and connected_ace_units >= 1)
+        or (description.printer_entity_type == PrinterEntityType.DRY_PRESET_SECONDARY and connected_ace_units >= 2)
     )
 
 
@@ -207,12 +205,14 @@ def check_descriptor_state_drying_unavailable(
         description.key[-1],
     )
 
-    return (
-        not preset_duration
-        or not preset_temperature
-        or int(preset_temperature) <= 0
-        or int(preset_duration) <= 0
-    )
+    return not preset_duration or not preset_temperature or int(preset_temperature) <= 0 or int(preset_duration) <= 0
+
+
+def check_descriptor_state_camera_unavailable(
+    description: AnycubicCloudEntityDescription,
+    printer: AnycubicPrinter | None,
+) -> bool:
+    return description.key == "camera" and (printer is None or not getattr(printer, "has_peripheral_camera", False))
 
 
 def printer_entity_unique_id(
@@ -279,14 +279,11 @@ def get_value_from_dict_if_type(
     value_type: type[_T],
     allow_lists: bool = False,
 ) -> _T | list[_T] | None:
-    if (
-        key in input_dict
-        and (
-            val := validate_value_is_type(
-                input_dict[key],
-                value_type,
-                allow_lists,
-            )
+    if key in input_dict and (
+        val := validate_value_is_type(
+            input_dict[key],
+            value_type,
+            allow_lists,
         )
     ):
         return val
@@ -313,17 +310,17 @@ def extract_panel_card_config(
     if len(input_conf) == 0:
         return card_conf
 
-    update_dict_and_validate(card_conf, input_conf, 'vertical', bool)
-    update_dict_and_validate(card_conf, input_conf, 'round', bool)
-    update_dict_and_validate(card_conf, input_conf, 'use_24hr', bool)
-    update_dict_and_validate(card_conf, input_conf, 'temperatureUnit', str)
-    update_dict_and_validate(card_conf, input_conf, 'lightEntityId', str)
-    update_dict_and_validate(card_conf, input_conf, 'powerEntityId', str)
-    update_dict_and_validate(card_conf, input_conf, 'cameraEntityId', str)
-    update_dict_and_validate(card_conf, input_conf, 'monitoredStats', str, allow_lists=True)
-    update_dict_and_validate(card_conf, input_conf, 'scaleFactor', float)
-    update_dict_and_validate(card_conf, input_conf, 'slotColors', str, allow_lists=True)
-    update_dict_and_validate(card_conf, input_conf, 'showSettingsButton', bool)
-    update_dict_and_validate(card_conf, input_conf, 'alwaysShow', bool)
+    update_dict_and_validate(card_conf, input_conf, "vertical", bool)
+    update_dict_and_validate(card_conf, input_conf, "round", bool)
+    update_dict_and_validate(card_conf, input_conf, "use_24hr", bool)
+    update_dict_and_validate(card_conf, input_conf, "temperatureUnit", str)
+    update_dict_and_validate(card_conf, input_conf, "lightEntityId", str)
+    update_dict_and_validate(card_conf, input_conf, "powerEntityId", str)
+    update_dict_and_validate(card_conf, input_conf, "cameraEntityId", str)
+    update_dict_and_validate(card_conf, input_conf, "monitoredStats", str, allow_lists=True)
+    update_dict_and_validate(card_conf, input_conf, "scaleFactor", float)
+    update_dict_and_validate(card_conf, input_conf, "slotColors", str, allow_lists=True)
+    update_dict_and_validate(card_conf, input_conf, "showSettingsButton", bool)
+    update_dict_and_validate(card_conf, input_conf, "alwaysShow", bool)
 
     return card_conf
