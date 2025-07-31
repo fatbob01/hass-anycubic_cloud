@@ -10,8 +10,6 @@ from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .api.const import AnycubicOrderID
-
 # Camera control button icons
 ICON_CAM_START = "mdi:video-plus"
 ICON_CAM_STOP = "mdi:video-off"
@@ -24,7 +22,7 @@ from .const import (
     PrinterEntityType,
 )
 from .entity import AnycubicCloudEntity, AnycubicCloudEntityDescription
-from .helpers import build_printer_device_info, printer_attributes_for_key
+from .helpers import printer_attributes_for_key
 
 if TYPE_CHECKING:
     from .coordinator import AnycubicCloudDataUpdateCoordinator
@@ -97,6 +95,23 @@ BUTTON_TYPES: list[AnycubicButtonEntityDescription] = list([
     ),
 ])
 
+CAMERA_BUTTON_TYPES: list[AnycubicButtonEntityDescription] = [
+    AnycubicButtonEntityDescription(
+        key="start_camera",
+        translation_key="start_camera",
+        icon=ICON_CAM_START,
+        printer_entity_type=PrinterEntityType.PRINTER,
+        requires_peripheral_camera=True,
+    ),
+    AnycubicButtonEntityDescription(
+        key="stop_camera",
+        translation_key="stop_camera",
+        icon=ICON_CAM_STOP,
+        printer_entity_type=PrinterEntityType.PRINTER,
+        requires_peripheral_camera=True,
+    ),
+]
+
 GLOBAL_BUTTON_TYPES: list[AnycubicButtonEntityDescription] = list([
     AnycubicButtonEntityDescription(
         key="request_file_list_cloud",
@@ -133,21 +148,10 @@ async def async_setup_entry(
             + SECONDARY_MULTI_COLOR_BOX_BUTTON_TYPES
             + PRIMARY_DRYING_PRESET_BUTTON_TYPES
             + SECONDARY_DRYING_PRESET_BUTTON_TYPES
+            + CAMERA_BUTTON_TYPES
             + GLOBAL_BUTTON_TYPES
         ),
     )
-
-    data = hass.data[DOMAIN][entry.entry_id]
-    api = data["api"]
-    printers = data["printers"]
-    cam_buttons: list[ButtonEntity] = []
-    for printer in printers:
-        if getattr(printer, "has_peripheral_camera", False):
-            cam_buttons.append(AnycubicCameraStartButton(printer, api, coordinator))
-            cam_buttons.append(AnycubicCameraStopButton(printer, api, coordinator))
-
-    if cam_buttons:
-        async_add_entities(cam_buttons)
 
 
 class AnycubicCloudButton(AnycubicCloudEntity, ButtonEntity):
@@ -182,47 +186,3 @@ class AnycubicCloudButton(AnycubicCloudEntity, ButtonEntity):
             return None
 
 
-class _AnycubicCameraButton(ButtonEntity):
-    """Base class for Camera Start/Stop."""
-
-    _attr_has_entity_name = True
-
-    def __init__(self, printer, api, coordinator, order_id, name_suffix, icon) -> None:
-        self._printer = printer
-        self._api = api
-        self._order_id = order_id
-        self._attr_unique_id = f"{printer.machine_mac}_{name_suffix.replace(' ', '_').lower()}"
-        self._attr_name = f"{printer.name} {name_suffix}"
-        self._attr_icon = icon
-        self._attr_device_info = build_printer_device_info(coordinator.data, printer.id)
-
-    async def async_press(self) -> None:
-        await self._api.async_send_order(self._order_id, device_id=self._printer.id)
-
-
-class AnycubicCameraStartButton(_AnycubicCameraButton):
-    """Send CAMERA_OPEN (1001)."""
-
-    def __init__(self, printer, api, coordinator) -> None:
-        super().__init__(
-            printer,
-            api,
-            coordinator,
-            AnycubicOrderID.CAMERA_OPEN,
-            "Start Camera",
-            ICON_CAM_START,
-        )
-
-
-class AnycubicCameraStopButton(_AnycubicCameraButton):
-    """Send CAMERA_CLOSE (1002)."""
-
-    def __init__(self, printer, api, coordinator) -> None:
-        super().__init__(
-            printer,
-            api,
-            coordinator,
-            AnycubicOrderID.CAMERA_CLOSE,
-            "Stop Camera",
-            ICON_CAM_STOP,
-        )

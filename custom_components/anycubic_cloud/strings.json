@@ -177,6 +177,12 @@
       "cancel_print": {
         "name": "Cancel Print"
       },
+      "start_camera": {
+        "name": "Start Camera"
+      },
+      "stop_camera": {
+        "name": "Stop Camera"
+      },
       "request_file_list_local": {
         "name": "Request File List (Local)"
       },

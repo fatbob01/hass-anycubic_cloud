@@ -28,6 +28,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .anycubic_cloud_api.anycubic_api import AnycubicMQTTAPI as AnycubicAPI
 from .anycubic_cloud_api.exceptions.exceptions import AnycubicAPIError, AnycubicAPIParsingError
+from .api.const import AnycubicOrderID
 from .const import (
     API_SETUP_RETRIES,
     API_SETUP_RETRY_INTERVAL_SECONDS,
@@ -453,6 +454,7 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 material_type = status_attr['material_type']
                 connected_ace_units = printer_state_connected_ace_units(self, printer_id)
                 supports_ace = printer_state_supports_ace(self, printer_id)
+                has_camera = status_attr['peripherals'].get('camera')
 
                 remaining_unregistered_descriptors = list()
 
@@ -492,6 +494,9 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                             supports_ace,
                             connected_ace_units,
                             self.entry.options,
+                        )
+                        or (
+                            description.requires_peripheral_camera and not has_camera
                         )
                     ):
                         remaining_unregistered_descriptors.append(description)
@@ -960,6 +965,15 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             elif printer and event_key == 'cancel_print':
                 await self._connect_mqtt_for_action_response()
                 await printer.cancel_print()
+
+            elif printer and event_key == 'start_camera':
+                await self.anycubic_api.async_send_order(
+                    AnycubicOrderID.CAMERA_OPEN, device_id=printer.id
+                )
+            elif printer and event_key == 'stop_camera':
+                await self.anycubic_api.async_send_order(
+                    AnycubicOrderID.CAMERA_CLOSE, device_id=printer.id
+                )
 
             # elif printer and event_key == 'toggle_auto_feed':
             #     await printer.multi_color_box_toggle_auto_feed()
