@@ -95,6 +95,7 @@ class AnycubicCloudEntityDescription:
     key: str
     translation_key: str | None = None
     printer_entity_type: int | None = None
+    requires_peripheral_camera: bool = False
 class AnycubicCloudEntity:
     def __init__(self, hass, coordinator, printer_id, entity_description):
         self.hass = hass
