@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -80,6 +81,48 @@ def _get_stream_url(token: AnycubicCameraToken) -> str | None:
     )["HLSStreamingSessionURL"]
 
 
+def _get_snapshot(token: AnycubicCameraToken) -> bytes | None:
+    """Return a JPEG snapshot for the given token."""
+    kvs = boto3.client(
+        "kinesisvideo",
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+
+    streams = kvs.list_streams(MaxResults=1).get("StreamInfoList") or []
+    if not streams:
+        return None
+
+    stream_name = streams[0]["StreamName"]
+    endpoint = kvs.get_data_endpoint(
+        StreamName=stream_name,
+        APIName="GET_IMAGES",
+    )["DataEndpoint"]
+    kav = boto3.client(
+        "kinesis-video-archived-media",
+        endpoint_url=endpoint,
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+
+    now = datetime.utcnow()
+    images = kav.get_images(
+        StreamName=stream_name,
+        ImageSelectorType="SERVER_TIMESTAMP",
+        StartTimestamp=now - timedelta(seconds=1),
+        EndTimestamp=now,
+        Format="JPEG",
+        MaxResults=1,
+    ).get("Images") or []
+    if not images:
+        return None
+    return images[0].get("ImageContent")
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -121,6 +164,7 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
         Camera.__init__(self)
 
         self._stream_url: str | None = None
+        self._token: AnycubicCameraToken | None = None
         self._refresh_coordinator: DataUpdateCoordinator | None = None
 
         printer = self.coordinator.get_printer_for_id(printer_id)
@@ -148,16 +192,40 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
             token = await self.coordinator.anycubic_api._send_anycubic_camera_open_order(printer)
             if not token:
                 return
+            self._token = token
             stream_url = await self.hass.async_add_executor_job(_get_stream_url, token)
             if not stream_url:
                 _LOGGER.debug("[%s] No camera stream available", printer.name)
                 return
             self._stream_url = stream_url
             _LOGGER.debug("[%s] HLS URL refreshed", printer.name)
-        except Exception as exc:  # pylint: disable=broad-except
+        except (BotoCoreError, ClientError, Exception) as exc:  # pylint: disable=broad-except
             _LOGGER.warning("Camera refresh failed: %s", exc)
 
     async def stream_source(self) -> str | None:
         if not self._stream_url:
             await self._refresh()
         return self._stream_url
+
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return a still image from the camera."""
+        if not self._stream_url or not self._token:
+            await self._refresh()
+
+        printer: AnycubicPrinter | None = self.coordinator.get_printer_for_id(
+            self._printer_id
+        )
+        if not printer or not self._token:
+            return None
+
+        try:
+            return await self.hass.async_add_executor_job(
+                _get_snapshot, self._token
+            )
+        except (BotoCoreError, ClientError, Exception) as exc:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Failed to fetch camera image for %s: %s", printer.name, exc
+            )
+            return None
