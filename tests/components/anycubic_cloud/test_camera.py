@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -133,16 +133,16 @@ async def test_async_camera_image_success():
     coordinator = MagicMock()
     coordinator.get_printer_for_id.return_value = printer
     coordinator.anycubic_api = MagicMock()
-    coordinator.anycubic_api._send_anycubic_camera_open_order = AsyncMock(return_value=token)
     coordinator.data = {"printers": {1: {"states": {"id": 1, "machine_name": "m", "name": "Printer", "machine_mac": "mac", "fw_version": "1"}, "attributes": {}}}, "user_info": {"id": 1}}
 
     cam = camera.AnycubicCloudCamera(hass, coordinator, 1, camera.CAMERA_TYPES[0])
     cam._stream_url = "stream"
+    cam._token = token
 
     with patch("custom_components.anycubic_cloud.camera._get_snapshot", return_value=b"img") as mock_snap:
         result = await cam.async_camera_image()
     assert result == b"img"
-    mock_snap.assert_called_once()
+    mock_snap.assert_called_once_with(token)
 
 
 @pytest.mark.asyncio
@@ -154,11 +154,11 @@ async def test_async_camera_image_error(caplog):
     coordinator = MagicMock()
     coordinator.get_printer_for_id.return_value = printer
     coordinator.anycubic_api = MagicMock()
-    coordinator.anycubic_api._send_anycubic_camera_open_order = AsyncMock(return_value=token)
     coordinator.data = {"printers": {1: {"states": {"id": 1, "machine_name": "m", "name": "Printer", "machine_mac": "mac", "fw_version": "1"}, "attributes": {}}}, "user_info": {"id": 1}}
 
     cam = camera.AnycubicCloudCamera(hass, coordinator, 1, camera.CAMERA_TYPES[0])
     cam._stream_url = "stream"
+    cam._token = token
 
     with patch("custom_components.anycubic_cloud.camera._get_snapshot", side_effect=RuntimeError("boom")):
         result = await cam.async_camera_image()
