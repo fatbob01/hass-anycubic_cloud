@@ -24,6 +24,7 @@ from .coordinator import AnycubicCloudDataUpdateCoordinator
 from .entity import AnycubicCloudEntity, AnycubicCloudEntityDescription
 
 if TYPE_CHECKING:
+    from .anycubic_cloud_api.data_models.orders import AnycubicCameraToken
     from .anycubic_cloud_api.data_models.printer import AnycubicPrinter
 
 
@@ -43,6 +44,35 @@ CAMERA_TYPES: list[AnycubicCameraEntityDescription] = [
         printer_entity_type=PrinterEntityType.PRINTER,
     )
 ]
+
+
+def _get_stream_url(token: AnycubicCameraToken) -> str:
+    """Return HLS streaming URL for the given token."""
+    kvs = boto3.client(
+        "kinesisvideo",
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+    stream_name = kvs.list_streams(MaxResults=1)["StreamInfoList"][0]["StreamName"]
+    endpoint = kvs.get_data_endpoint(
+        StreamName=stream_name,
+        APIName="GET_HLS_STREAMING_SESSION_URL",
+    )["DataEndpoint"]
+    kav = boto3.client(
+        "kinesis-video-archived-media",
+        endpoint_url=endpoint,
+        region_name=token.region or "us-west-2",
+        aws_access_key_id=token.secret_id,
+        aws_secret_access_key=token.secret_key,
+        aws_session_token=token.session_token,
+    )
+    return kav.get_hls_streaming_session_url(
+        StreamName=stream_name,
+        PlaybackMode="LIVE",
+        DiscontinuityMode="ALWAYS",
+    )["HLSStreamingSessionURL"]
 
 
 async def async_setup_entry(
@@ -113,31 +143,8 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
             token = await self.coordinator.anycubic_api._send_anycubic_camera_open_order(printer)
             if not token:
                 return
-            kvs = boto3.client(
-                "kinesisvideo",
-                region_name=token.region or "us-west-2",
-                aws_access_key_id=token.secret_id,
-                aws_secret_access_key=token.secret_key,
-                aws_session_token=token.session_token,
-            )
-            stream_name = kvs.list_streams(MaxResults=1)["StreamInfoList"][0]["StreamName"]
-            endpoint = kvs.get_data_endpoint(
-                StreamName=stream_name,
-                APIName="GET_HLS_STREAMING_SESSION_URL",
-            )["DataEndpoint"]
-            kav = boto3.client(
-                "kinesis-video-archived-media",
-                endpoint_url=endpoint,
-                region_name=token.region or "us-west-2",
-                aws_access_key_id=token.secret_id,
-                aws_secret_access_key=token.secret_key,
-                aws_session_token=token.session_token,
-            )
-            self._stream_url = kav.get_hls_streaming_session_url(
-                StreamName=stream_name,
-                PlaybackMode="LIVE",
-                DiscontinuityMode="ALWAYS",
-            )["HLSStreamingSessionURL"]
+            stream_url = await self.hass.async_add_executor_job(_get_stream_url, token)
+            self._stream_url = stream_url
             _LOGGER.debug("[%s] HLS URL refreshed", printer.name)
         except Exception as exc:  # pylint: disable=broad-except
             _LOGGER.warning("Camera refresh failed: %s", exc)
