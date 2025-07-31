@@ -46,7 +46,7 @@ CAMERA_TYPES: list[AnycubicCameraEntityDescription] = [
 ]
 
 
-def _get_stream_url(token: AnycubicCameraToken) -> str:
+def _get_stream_url(token: AnycubicCameraToken) -> str | None:
     """Return HLS streaming URL for the given token."""
     kvs = boto3.client(
         "kinesisvideo",
@@ -55,7 +55,12 @@ def _get_stream_url(token: AnycubicCameraToken) -> str:
         aws_secret_access_key=token.secret_key,
         aws_session_token=token.session_token,
     )
-    stream_name = kvs.list_streams(MaxResults=1)["StreamInfoList"][0]["StreamName"]
+
+    streams = kvs.list_streams(MaxResults=1).get("StreamInfoList") or []
+    if not streams:
+        return None
+
+    stream_name = streams[0]["StreamName"]
     endpoint = kvs.get_data_endpoint(
         StreamName=stream_name,
         APIName="GET_HLS_STREAMING_SESSION_URL",
@@ -144,6 +149,9 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
             if not token:
                 return
             stream_url = await self.hass.async_add_executor_job(_get_stream_url, token)
+            if not stream_url:
+                _LOGGER.debug("[%s] No camera stream available", printer.name)
+                return
             self._stream_url = stream_url
             _LOGGER.debug("[%s] HLS URL refreshed", printer.name)
         except Exception as exc:  # pylint: disable=broad-except
