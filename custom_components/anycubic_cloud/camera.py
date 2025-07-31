@@ -225,6 +225,7 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
                 _get_snapshot, self._token
             )
         except (BotoCoreError, ClientError, Exception) as exc:  # pylint: disable=broad-except
+
             _LOGGER.warning(
                 "Failed to fetch camera image for %s: %s", printer.name, exc
             )
