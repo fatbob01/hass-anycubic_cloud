@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
@@ -33,16 +32,12 @@ _LOGGER = logging.getLogger(__name__)
 _REFRESH = timedelta(minutes=55)
 
 
-@dataclass(frozen=True)
-class AnycubicCameraEntityDescription(AnycubicCloudEntityDescription):
-    """Describes Anycubic Cloud camera entity."""
-
-
-CAMERA_TYPES: list[AnycubicCameraEntityDescription] = [
-    AnycubicCameraEntityDescription(
+CAMERA_TYPES: list[AnycubicCloudEntityDescription] = [
+    AnycubicCloudEntityDescription(
         key="camera",
         translation_key="camera",
         printer_entity_type=PrinterEntityType.PRINTER,
+        requires_peripheral_camera=True,
     )
 ]
 
