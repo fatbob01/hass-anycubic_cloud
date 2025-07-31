@@ -34,10 +34,10 @@ _REFRESH = timedelta(minutes=55)
 
 CAMERA_TYPES: list[AnycubicCloudEntityDescription] = [
     AnycubicCloudEntityDescription(
-        key="camera",
+        key="camera_stream",  # stable key -> unique_id ends _camera
         translation_key="camera",
         printer_entity_type=PrinterEntityType.PRINTER,
-        requires_peripheral_camera=True,
+        requires_peripheral_camera=False,
     )
 ]
 
@@ -165,6 +165,7 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
         printer = self.coordinator.get_printer_for_id(printer_id)
         if printer:
             self._attr_unique_id = f"{printer.machine_mac}_camera"
+        self._attr_name = "Camera"
 
     async def async_added_to_hass(self) -> None:
         await self._refresh()
