@@ -187,6 +187,7 @@ class AnycubicCloudCamera(AnycubicCloudEntity, Camera):
         try:
             token = await self.coordinator.anycubic_api._send_anycubic_camera_open_order(printer)
             if not token:
+                _LOGGER.debug("[%s] No camera token available", printer.name)
                 return
             self._token = token
             stream_url = await self.hass.async_add_executor_job(_get_stream_url, token)
