@@ -898,13 +898,21 @@ class AnycubicCloudDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 await self._connect_mqtt_for_action_response()
                 await printer.cancel_print()
 
-            elif printer and event_key == 'start_camera':
+            elif printer and event_key == "start_camera":
+                LOGGER.debug("[%s] Sending CAMERA_OPEN (1001)", printer_id)
                 await self.anycubic_api.async_send_order(
-                    AnycubicOrderID.CAMERA_OPEN, device_id=printer.id
+                    AnycubicOrderID.CAMERA_OPEN, device_id=printer_id
                 )
-            elif printer and event_key == 'stop_camera':
+                LOGGER.info(
+                    "[%s] Camera stream requested (order 1001 sent)", printer_id
+                )
+            elif printer and event_key == "stop_camera":
+                LOGGER.debug("[%s] Sending CAMERA_CLOSE (1002)", printer_id)
                 await self.anycubic_api.async_send_order(
-                    AnycubicOrderID.CAMERA_CLOSE, device_id=printer.id
+                    AnycubicOrderID.CAMERA_CLOSE, device_id=printer_id
+                )
+                LOGGER.info(
+                    "[%s] Camera stop requested (order 1002 sent)", printer_id
                 )
 
             # elif printer and event_key == 'toggle_auto_feed':
